@@ -34,7 +34,12 @@ describe('Swagger (e2e)', () => {
         .expect(200);
       expect(res.body.openapi).toMatch(/^3\./);
       const paths = Object.keys(res.body.paths);
-      expect(paths.sort()).toEqual(['/health', '/ready', '/version']);
+      expect(paths.sort()).toEqual([
+        '/health',
+        '/health/integrations',
+        '/ready',
+        '/version',
+      ]);
     });
 
     it('does NOT include any future/invented integration endpoints', async () => {
@@ -42,11 +47,10 @@ describe('Swagger (e2e)', () => {
       const paths = Object.keys(res.body.paths).join(' ').toLowerCase();
       expect(paths).not.toContain('worksuite');
       expect(paths).not.toContain('lead-perfection');
-      expect(paths).not.toContain('sage');
-      expect(paths).not.toContain('fsm');
-      expect(paths).not.toContain('sql');
-      // Exactly the three current endpoints, nothing more.
-      expect(Object.keys(res.body.paths)).toHaveLength(3);
+      expect(paths).not.toContain('/sage');
+      expect(paths).not.toContain('/sql');
+      expect(paths).not.toContain('job-complete');
+      expect(paths).not.toContain('purchase-receipt');
     });
 
     it('serves Swagger UI at /docs', async () => {

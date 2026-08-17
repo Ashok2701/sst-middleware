@@ -8,14 +8,42 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { getCorrelationId } from '../correlation/correlation.context';
+import {
+  IntegrationError,
+  IntegrationErrorCode,
+} from '../integration/errors/integration-error';
 import { httpStatusToErrorCode } from './error-codes';
+
+/** Maps an internal integration error code to an outward HTTP status. */
+function integrationCodeToHttpStatus(code: IntegrationErrorCode): number {
+  switch (code) {
+    case IntegrationErrorCode.VALIDATION_ERROR:
+    case IntegrationErrorCode.REMOTE_VALIDATION_ERROR:
+      return HttpStatus.BAD_REQUEST;
+    case IntegrationErrorCode.AUTHENTICATION_ERROR:
+      return HttpStatus.UNAUTHORIZED;
+    case IntegrationErrorCode.AUTHORIZATION_ERROR:
+      return HttpStatus.FORBIDDEN;
+    case IntegrationErrorCode.DUPLICATE_OPERATION:
+      return HttpStatus.CONFLICT;
+    case IntegrationErrorCode.RATE_LIMIT_ERROR:
+      return HttpStatus.TOO_MANY_REQUESTS;
+    case IntegrationErrorCode.TIMEOUT_ERROR:
+      return HttpStatus.GATEWAY_TIMEOUT;
+    case IntegrationErrorCode.CONNECTION_ERROR:
+    case IntegrationErrorCode.REMOTE_SYSTEM_ERROR:
+      return HttpStatus.BAD_GATEWAY;
+    default:
+      return HttpStatus.INTERNAL_SERVER_ERROR;
+  }
+}
 
 /**
  * Catches every unhandled exception and converts it into a consistent
  * error payload: `{ code, message, requestId, details? }`.
  *
- * Stack traces and internal implementation details are logged server-side
- * but NEVER returned to API consumers.
+ * Stack traces, raw backend errors and internal implementation details are
+ * logged server-side but NEVER returned to API consumers.
  */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -38,7 +66,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let message = 'An unexpected error occurred';
     let details: unknown;
 
-    if (exception instanceof HttpException) {
+    if (exception instanceof IntegrationError) {
+      // Normalised integration failure - expose only the safe public shape.
+      status = integrationCodeToHttpStatus(exception.code);
+      const publicBody = exception.toPublic(requestId);
+      code = publicBody.code;
+      message = publicBody.message;
+      this.logger.error(
+        `IntegrationError code=${exception.code} ` +
+          `target=${exception.targetSystem ?? 'n/a'} ` +
+          `operation=${exception.operation ?? 'n/a'} ` +
+          `requestId=${requestId}`,
+      );
+    } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       const raw = exception.getResponse();
 

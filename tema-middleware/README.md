@@ -2,15 +2,15 @@
 
 Enterprise integration middleware platform.
 
-> **Current phase: Phase 1.5 — Engineering Foundation.**
-> Phase 1 (project foundation) is complete and verified. Phase 1.5 adds
-> environment-configurable Swagger, reproducible OpenAPI export, a CI pipeline,
-> an OpenTelemetry-ready correlation/trace foundation, logging & error-handling
-> hardening, and a documented future-integration strategy.
+> **Current phase: Phase 2 — Core Integration Platform + SQL Server + Sage X3 foundations.**
+> Phases 1 and 1.5 are complete and verified. Phase 2 adds the reusable
+> integration architecture (adapters, error model, retry/idempotency, transaction
+> tracking, audit, security & rate-limit abstractions) plus SQL Server and Sage X3
+> integration **foundations**.
 >
-> External integrations (Sage X3, SQL Server, FSM Scheduler, FSM Mobile business
-> APIs, WorkSuite, Lead Perfection, OAuth/OIDC, RBAC, message buses, Redis,
-> Kubernetes) are **NOT implemented yet**.
+> No business workflows or business endpoints are implemented. No Sage/SQL
+> business operations are invented (contracts were not provided). FSM, FSM
+> Scheduler, WorkSuite and Lead Perfection integrations are **NOT implemented**.
 >
 > **WorkSuite and Lead Perfection are future _optional_ integrations and
 > currently have no implementation because the client's technical specifications
@@ -139,6 +139,29 @@ cp .env.example .env
 - **development** → enabled
 - **test** → enabled
 - **production** → disabled (set `SWAGGER_ENABLED=true` to opt in)
+
+### Phase 2 integration variables (all optional; integrations default OFF)
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `RATE_LIMIT_ENABLED` | `true` | Enable request rate limiting |
+| `RATE_LIMIT_TTL` | `60000` | Window in ms |
+| `RATE_LIMIT_LIMIT` | `300` | Max requests per window (placeholder - tune later) |
+| `SQL_SERVER_ENABLED` | `false` | Enable the SQL Server adapter |
+| `SQL_SERVER_HOST` / `SQL_SERVER_PORT` | — / `1433` | SQL host / port |
+| `SQL_SERVER_DATABASE` / `SQL_SERVER_USER` / `SQL_SERVER_PASSWORD` | — | Credentials (never committed) |
+| `SQL_SERVER_ENCRYPT` / `SQL_SERVER_TRUST_CERTIFICATE` | `true` / `false` | TLS options |
+| `SQL_SERVER_CONNECTION_TIMEOUT` / `SQL_SERVER_REQUEST_TIMEOUT` | `15000` | Timeouts (ms) |
+| `SQL_SERVER_POOL_MIN` / `SQL_SERVER_POOL_MAX` / `SQL_SERVER_POOL_IDLE_TIMEOUT` | `0` / `10` / `30000` | Pool sizing |
+| `SAGE_X3_ENABLED` | `false` | Enable the Sage X3 adapter |
+| `SAGE_X3_BASE_URL` / `SAGE_X3_TIMEOUT` | — / `30000` | Base URL / timeout (ms) |
+| `SAGE_X3_AUTH_TYPE` | `none` | `none` \| `basic` \| `apikey` (actual mechanism TBC) |
+| `SAGE_X3_USERNAME` / `SAGE_X3_PASSWORD` / `SAGE_X3_API_KEY` / `SAGE_X3_API_KEY_HEADER` | — | Auth (never committed) |
+| `SAGE_X3_HEALTH_PATH` | `/` | Path used for the connectivity probe |
+| `SAGE_X3_RETRY_MAX_ATTEMPTS` / `SAGE_X3_RETRY_INITIAL_DELAY` | `1` / `200` | Retry hints |
+
+`DATABASE_URL` remains a placeholder (TEMA's own datastore is undecided). SQL
+Server configuration is introduced separately and does not reuse `DATABASE_URL`.
 
 Environment values are validated at startup; invalid config fails fast with a
 clear message. No real URLs, credentials, passwords, API keys or secrets are
@@ -286,6 +309,43 @@ Every response carries an `x-correlation-id` header for tracing.
 
 ---
 
+**Phase 2 — Core Integration Platform + SQL Server + Sage X3 foundations: COMPLETE.**
+
+- Reusable integration architecture: `IntegrationAdapter` contract + registry
+- Integration error model (12 codes) with safe consumer-facing mapping
+- Timeout + operation-aware retry policies (writes default to NO_RETRY)
+- Idempotency abstraction (atomic acquire, pluggable store)
+- Integration transaction tracking foundation (pluggable store)
+- Business-audit foundation (separate from technical logs)
+- Security abstractions (authn/authz) with safe no-op defaults (not yet enforced)
+- Configurable rate limiting (`@nestjs/throttler`)
+- **SQL Server** adapter: pooling, timeouts, parameterized ops, connectivity
+  check, graceful shutdown, no secret/SQL leakage, no arbitrary-SQL endpoint
+- **Sage X3** adapter: HTTP client, pluggable auth, error mapping, response
+  validation, retry hooks, correlation propagation, connectivity check
+- Internal `GET /health/integrations` (does not change `/health` or `/ready`)
+
+See `src/integrations/README.md` for the full adapter design, and §13 for the
+confirmed-vs-pending list.
+
+### Phase 2 integration flow
+
+```text
+TEMA app --HTTPS--> [ DMZ: TEMA Middleware ]
+                      correlationId ABC-123
+                      transaction tracking + audit + idempotency
+                          |                         |
+                          v                         v
+                   SQL Server Adapter        Sage X3 Adapter
+                   (pool, parameterized)     (HTTP client, auth, retry)
+```
+
+Consumers will call business-oriented TEMA APIs (defined in a later phase) - they
+never call adapter operations directly, and TEMA never exposes SQL Server or
+Sage X3 to external callers.
+
+---
+
 ## 13. Current phase
 
 **Phase 1 — Project Foundation: COMPLETE & verified.**
@@ -311,13 +371,33 @@ Every response carries an `x-correlation-id` header for tracing.
 - `/health` (alive) & `/ready` (initialized) kept as-is — **no** dependency probes yet
 - Documented future-integration adapter strategy (`src/integrations/README.md`)
 
-Explicitly **not** implemented: Sage X3, SQL Server, FSM Scheduler, FSM Mobile
-business APIs, WorkSuite, Lead Perfection, OAuth/OIDC, RBAC, RabbitMQ, Azure
-Service Bus, Redis, Kubernetes, database connectivity, full OpenTelemetry,
-business workflows.
+Explicitly **not** implemented (Phase 2): FSM / FSM Scheduler business APIs,
+WorkSuite, Lead Perfection, OAuth/OIDC identity provider, RBAC roles, RabbitMQ,
+Azure Service Bus, Redis, Kubernetes, full OpenTelemetry backend, business
+workflows, and **any Sage/SQL business operations** (no contracts were provided).
 
-`DATABASE_URL` remains a **placeholder only** — no DB connectivity in this phase
-(TEMA's own datastore, PostgreSQL vs SQL Server, is not yet finalized).
+`DATABASE_URL` remains a **placeholder only**. SQL Server integration has its own
+`SQL_SERVER_*` configuration; TEMA's own datastore (PostgreSQL vs SQL Server) is
+still not finalized, so transaction/idempotency/audit stores default to in-memory.
+
+### Confirmed vs pending
+
+**Confirmed:** SQL Server available · Sage X3 Web Service available · TEMA is the
+integration hub · WorkSuite future/optional · Lead Perfection contract incomplete ·
+FSM / FSM Scheduler contracts incomplete.
+
+**Pending / unknown (not invented):** exact Sage X3 operations & schemas · exact
+SQL tables/stored procedures · authentication provider · BAASS Bridge
+responsibility boundary (BAASS provides bi-directional Lead Perfection ↔ Sage X3;
+TEMA stays flexible for direct or mediated integration) · full offline requirement ·
+final Lead Perfection API.
+
+### DMZ assumptions
+
+TEMA runs in a DMZ: inbound is HTTPS from client apps only; outbound is controlled
+to SQL Server and Sage X3. SQL Server is never exposed to the internet and Sage X3
+is never exposed to external applications — TEMA is the boundary. Required outbound
+connectivity is driven entirely by the `SQL_SERVER_*` / `SAGE_X3_*` configuration.
 
 ---
 

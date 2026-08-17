@@ -66,6 +66,28 @@
           "Version"
         ]
       }
+    },
+    "/health/integrations": {
+      "get": {
+        "operationId": "IntegrationHealthController_integrations",
+        "summary": "Connectivity status of configured integrations (UP/DOWN/DISABLED)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationHealthResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
     }
   },
   "info": {
@@ -145,6 +167,60 @@
         "required": [
           "service",
           "version"
+        ]
+      },
+      "IntegrationHealthItem": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "sql-server"
+          },
+          "targetSystem": {
+            "type": "string",
+            "example": "SQL Server"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UP",
+              "DOWN",
+              "DISABLED"
+            ],
+            "example": "DISABLED"
+          },
+          "enabled": {
+            "type": "boolean",
+            "example": false
+          },
+          "latencyMs": {
+            "type": "number",
+            "example": 12
+          },
+          "message": {
+            "type": "string",
+            "example": "Integration disabled"
+          }
+        },
+        "required": [
+          "name",
+          "targetSystem",
+          "status",
+          "enabled"
+        ]
+      },
+      "IntegrationHealthResponse": {
+        "type": "object",
+        "properties": {
+          "integrations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationHealthItem"
+            }
+          }
+        },
+        "required": [
+          "integrations"
         ]
       }
     }

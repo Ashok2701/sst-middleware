@@ -24,9 +24,18 @@ export enum LogLevel {
   Silent = 'silent',
 }
 
+export enum SageAuthTypeEnum {
+  None = 'none',
+  Basic = 'basic',
+  ApiKey = 'apikey',
+}
+
 /**
  * Strongly-typed schema for the environment variables the app depends on.
  * Validation runs at startup so misconfiguration fails fast and loudly.
+ *
+ * All integration-specific variables are OPTIONAL so the application can start
+ * with integrations disabled (SQL_SERVER_ENABLED / SAGE_X3_ENABLED = false).
  */
 export class EnvironmentVariables {
   @IsEnum(Environment)
@@ -62,6 +71,128 @@ export class EnvironmentVariables {
   @IsBooleanString()
   @IsOptional()
   SWAGGER_ENABLED?: string;
+
+  // ----- SQL Server integration (all optional) -----
+  @IsBooleanString()
+  @IsOptional()
+  SQL_SERVER_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_SERVER_HOST?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  SQL_SERVER_PORT?: number;
+
+  @IsString()
+  @IsOptional()
+  SQL_SERVER_DATABASE?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_SERVER_USER?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_SERVER_PASSWORD?: string;
+
+  @IsBooleanString()
+  @IsOptional()
+  SQL_SERVER_ENCRYPT?: string;
+
+  @IsBooleanString()
+  @IsOptional()
+  SQL_SERVER_TRUST_CERTIFICATE?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  SQL_SERVER_CONNECTION_TIMEOUT?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  SQL_SERVER_REQUEST_TIMEOUT?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  SQL_SERVER_POOL_MIN?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  SQL_SERVER_POOL_MAX?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  SQL_SERVER_POOL_IDLE_TIMEOUT?: number;
+
+  // ----- Sage X3 integration (all optional) -----
+  @IsBooleanString()
+  @IsOptional()
+  SAGE_X3_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  SAGE_X3_BASE_URL?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  SAGE_X3_TIMEOUT?: number;
+
+  @IsEnum(SageAuthTypeEnum)
+  @IsOptional()
+  SAGE_X3_AUTH_TYPE?: SageAuthTypeEnum;
+
+  @IsString()
+  @IsOptional()
+  SAGE_X3_USERNAME?: string;
+
+  @IsString()
+  @IsOptional()
+  SAGE_X3_PASSWORD?: string;
+
+  @IsString()
+  @IsOptional()
+  SAGE_X3_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  SAGE_X3_API_KEY_HEADER?: string;
+
+  @IsString()
+  @IsOptional()
+  SAGE_X3_HEALTH_PATH?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  SAGE_X3_RETRY_MAX_ATTEMPTS?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  SAGE_X3_RETRY_INITIAL_DELAY?: number;
+
+  // ----- Rate limiting -----
+  @IsBooleanString()
+  @IsOptional()
+  RATE_LIMIT_ENABLED?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  RATE_LIMIT_TTL?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  RATE_LIMIT_LIMIT?: number;
 }
 
 export function validateEnv(
