@@ -2,11 +2,19 @@
 
 Enterprise integration middleware platform.
 
-> **Current phase: Phase 1 — Project Foundation only.**
+> **Current phase: Phase 1.5 — Engineering Foundation.**
+> Phase 1 (project foundation) is complete and verified. Phase 1.5 adds
+> environment-configurable Swagger, reproducible OpenAPI export, a CI pipeline,
+> an OpenTelemetry-ready correlation/trace foundation, logging & error-handling
+> hardening, and a documented future-integration strategy.
+>
 > External integrations (Sage X3, SQL Server, FSM Scheduler, FSM Mobile business
 > APIs, WorkSuite, Lead Perfection, OAuth/OIDC, RBAC, message buses, Redis,
-> Kubernetes) are **NOT implemented yet**. This repository currently provides
-> only the production-grade foundation on which those later phases will be built.
+> Kubernetes) are **NOT implemented yet**.
+>
+> **WorkSuite and Lead Perfection are future _optional_ integrations and
+> currently have no implementation because the client's technical specifications
+> have not yet been provided.**
 
 ---
 
@@ -53,49 +61,38 @@ endpoints, Swagger docs, tests and a production Docker image.
 
 ```text
 tema-middleware/
+├── .github/workflows/ci.yml    # CI pipeline (lint, tests, build, docker)
 ├── src/
 │   ├── common/
 │   │   ├── errors/         # Global exception filter + error codes + error DTO
 │   │   ├── logging/        # Structured (pino) logging module
-│   │   ├── correlation/    # Correlation/request-id middleware + constants
+│   │   ├── correlation/    # Correlation id middleware + AsyncLocalStorage context
 │   │   ├── validation/     # Global validation pipe factory
 │   │   └── constants.ts    # Non-secret app constants (service name, version)
 │   ├── config/             # Env loading + startup env validation
 │   ├── health/             # /health (liveness) + /ready (readiness)
 │   ├── version/            # /version
+│   ├── integrations/       # Documented future-integration strategy (no code yet)
 │   ├── app.module.ts       # Root module (wires everything together)
 │   ├── setup.ts            # Shared app setup (pipe + filter) reused by e2e tests
-│   ├── swagger.ts          # Swagger/OpenAPI configuration
+│   ├── swagger.ts          # Swagger/OpenAPI configuration + document builder
+│   ├── openapi.ts          # Reproducible openapi.json generator
 │   └── main.ts             # Application bootstrap
-├── test/
-│   ├── app.e2e-spec.ts         # health / ready / version / correlation / errors
-│   ├── validation.e2e-spec.ts  # global validation + error handling
-│   └── jest-e2e.json
+├── test/                   # e2e specs (app / validation / swagger)
 ├── Dockerfile
-├── .dockerignore
-├── .gitignore
 ├── .env.example
-├── package.json
-├── tsconfig.json
-├── tsconfig.build.json
-├── nest-cli.json
-├── .eslintrc.js
-├── .prettierrc
-└── README.md
+├── openapi.json            # Generated OpenAPI spec (via npm run openapi:generate)
+└── package.json / tsconfig / eslint / prettier ...
 ```
 
-### Note on structure
+### Architecture note
 
-The requested layout is followed closely. Two small, best-practice additions:
-
-- `src/setup.ts` — extracts the global pipe + filter wiring so the exact same
-  configuration is reused by the e2e test harness (DRY, avoids test/prod drift).
-- `src/swagger.ts` — keeps Swagger configuration out of `main.ts`.
-
-This modular structure means future integration modules
-(`fsm/`, `sage-x3/`, `sql-integration/`, `worksuite/`, `lead-perfection/`,
-`fsm-scheduler/`) can be added as self-contained NestJS modules under `src/`
-without restructuring the foundation.
+- The app is a **single, modular NestJS application** — not multiple
+  microservices/containers. Whether any module later becomes independently
+  deployable is deferred until integration boundaries are understood.
+- Future integrations use the **adapter pattern** under `src/integrations/`
+  (see `src/integrations/README.md`). No integration code or invented endpoints
+  exist yet.
 
 ---
 
@@ -135,6 +132,13 @@ cp .env.example .env
 | `FSM_SCHEDULER_PORT`     | no       | —             | FSM Scheduler port (integration not in Phase 1)        |
 | `DATABASE_URL`           | no       | —             | DB connection string (not used in Phase 1)             |
 | `LOG_LEVEL`              | no       | `info`        | `fatal`\|`error`\|`warn`\|`info`\|`debug`\|`trace`\|`silent` |
+| `SWAGGER_ENABLED`        | no       | env-based     | `true`\|`false`. Default: on in dev/test, off in production |
+
+`SWAGGER_ENABLED` default behaviour:
+
+- **development** → enabled
+- **test** → enabled
+- **production** → disabled (set `SWAGGER_ENABLED=true` to opt in)
 
 Environment values are validated at startup; invalid config fails fast with a
 clear message. No real URLs, credentials, passwords, API keys or secrets are
@@ -203,17 +207,70 @@ and starts via `node dist/main.js`. The listening port is driven by `TEMA_PORT`.
 
 ## 11. Swagger URL
 
-Interactive API documentation:
+Swagger is **environment-configurable** via `SWAGGER_ENABLED` (see §6).
+When enabled:
 
 ```text
-http://localhost:8081/docs
+http://localhost:8081/docs        # interactive UI
+http://localhost:8081/docs-json   # raw OpenAPI JSON
 ```
 
-Raw OpenAPI JSON:
+When disabled (production default), both endpoints return `404`.
+
+### Regenerating the OpenAPI specification
+
+A committed `openapi.json` is generated from the live app metadata and reflects
+**only the endpoints that currently exist** (`/health`, `/ready`, `/version`):
+
+```bash
+npm run openapi:generate    # builds, then writes ./openapi.json
+```
+
+No future/integration endpoints (FSM, Sage, SQL, WorkSuite, Lead Perfection) are
+invented in the spec.
+
+### CI pipeline
+
+`.github/workflows/ci.yml` runs on every push and pull request:
+
+1. Install dependencies (`yarn install --frozen-lockfile`)
+2. Lint (`yarn lint`)
+3. Unit tests (`yarn test`)
+4. E2E tests (`yarn test:e2e`)
+5. Production build (`yarn build`)
+6. Validate Docker image build (`docker build`)
+
+It performs verification only — no automatic deployment, no Kubernetes, no cloud
+infrastructure.
+
+### Correlation ID / trace foundation
+
+Every request is tagged with a correlation id:
+
+- accepts an incoming `X-Correlation-ID` header (propagated if present);
+- generates a UUID when absent;
+- stored in an `AsyncLocalStorage` context so it is available throughout the
+  request lifecycle (retrievable via `getCorrelationId()`), plus on `req`;
+- included in every structured log line (`correlationId`);
+- returned on the response (`x-correlation-id` header);
+- included in every error response (`requestId`).
+
+This mirrors OpenTelemetry's context-propagation model, so a future OTel
+integration can wrap/replace the context store cleanly. **Full OpenTelemetry and
+any observability backend (Jaeger/Grafana/App Insights) are intentionally NOT
+implemented yet.**
 
 ```text
-http://localhost:8081/docs-json
+FSM Mobile --X-Correlation-ID: ABC-123--> TEMA --ABC-123--> FSM Service --> Sage Service
 ```
+
+### Structured logging
+
+`nestjs-pino` emits JSON logs containing (where applicable): `time`, `level`,
+`service`, `correlationId`, request `method`, request path, `statusCode`,
+`durationMs` and error information. Sensitive data (auth headers, cookies,
+passwords, tokens, API keys, client secrets, db passwords, SSN) is masked/removed
+and never logged.
 
 ---
 
@@ -231,13 +288,10 @@ Every response carries an `x-correlation-id` header for tracing.
 
 ## 13. Current phase
 
-**Phase 1 — Project Foundation.**
-
-Implemented:
+**Phase 1 — Project Foundation: COMPLETE & verified.**
 
 - Environment-based configuration with startup validation
-- Structured JSON logging (timestamp, level, service, correlation id, method,
-  path, status, duration) with sensitive-field redaction
+- Structured JSON logging with sensitive-field redaction
 - Correlation/request id per request (generated or propagated)
 - Global request validation (foundation for future DTOs)
 - Consistent global error responses (`{ code, message, requestId }`, no stack traces)
@@ -246,25 +300,41 @@ Implemented:
 - Unit + e2e tests (Jest + Supertest)
 - Production-ready Dockerfile
 
-Explicitly **not** implemented in this phase: Sage X3, SQL Server, FSM Scheduler,
-FSM Mobile business APIs, WorkSuite, Lead Perfection, OAuth/OIDC, RBAC, RabbitMQ,
-Azure Service Bus, Redis, Kubernetes, business workflows.
+**Phase 1.5 — Engineering Foundation: COMPLETE.**
+
+- `SWAGGER_ENABLED` — environment-configurable Swagger (on in dev/test, off in prod)
+- Reproducible OpenAPI export (`npm run openapi:generate` → `openapi.json`)
+- GitHub Actions CI (lint, unit, e2e, build, docker)
+- OpenTelemetry-ready correlation/trace foundation (AsyncLocalStorage context)
+- Logging hardening (`durationMs`, expanded sensitive-data masking)
+- Reviewed & confirmed consistent global error handling (no internal leakage)
+- `/health` (alive) & `/ready` (initialized) kept as-is — **no** dependency probes yet
+- Documented future-integration adapter strategy (`src/integrations/README.md`)
+
+Explicitly **not** implemented: Sage X3, SQL Server, FSM Scheduler, FSM Mobile
+business APIs, WorkSuite, Lead Perfection, OAuth/OIDC, RBAC, RabbitMQ, Azure
+Service Bus, Redis, Kubernetes, database connectivity, full OpenTelemetry,
+business workflows.
+
+`DATABASE_URL` remains a **placeholder only** — no DB connectivity in this phase
+(TEMA's own datastore, PostgreSQL vs SQL Server, is not yet finalized).
 
 ---
 
-## 14. Future planned phases
+## 14. Future planned phases & integration strategy
 
-The foundation is intentionally structured so the following can be added as
-independent modules without restructuring:
+Future integrations are added as self-contained modules/adapters under
+`src/integrations/` (see that folder's README) **without** restructuring the core:
 
 - FSM Service
+- FSM Scheduler Integration
 - Sage X3 Service
 - SQL Integration Service
-- WorkSuite Service
-- Lead Perfection Service
-- FSM Scheduler Integration
+- WorkSuite Service — **future optional; no spec provided yet, so not implemented**
+- Lead Perfection Service — **future optional; no spec provided yet, so not implemented**
 
-A single correlation id will then trace a request across:
+Their absence does not prevent TEMA from starting, testing or operating. A single
+correlation id will then trace a request across:
 
 ```text
 FSM Mobile → TEMA → FSM Service → Sage Service → Sage X3

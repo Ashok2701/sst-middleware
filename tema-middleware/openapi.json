@@ -1,0 +1,152 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "HealthController_liveness",
+        "summary": "Liveness probe - is the service running?",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/ready": {
+      "get": {
+        "operationId": "HealthController_readiness",
+        "summary": "Readiness probe - is the service ready to receive traffic?",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/version": {
+      "get": {
+        "operationId": "VersionController_getVersion",
+        "summary": "Service name and version",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Version"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "TEMA Middleware API",
+    "description": "Enterprise integration middleware platform. Phase 1.5: foundation only (health, readiness, version). External integrations (FSM, FSM Scheduler, Sage X3, SQL, WorkSuite, Lead Perfection) are NOT implemented yet.",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Liveness and readiness probes"
+    },
+    {
+      "name": "Version",
+      "description": "Service version information"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "UP"
+          },
+          "service": {
+            "type": "string",
+            "example": "tema-middleware"
+          }
+        },
+        "required": [
+          "status",
+          "service"
+        ]
+      },
+      "ReadinessResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "READY"
+          },
+          "service": {
+            "type": "string",
+            "example": "tema-middleware"
+          },
+          "checks": {
+            "type": "array",
+            "description": "Individual readiness checks (empty in Phase 1).",
+            "items": {
+              "type": "object"
+            },
+            "example": []
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "checks"
+        ]
+      },
+      "VersionResponse": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string",
+            "example": "tema-middleware"
+          },
+          "version": {
+            "type": "string",
+            "example": "0.1.0"
+          }
+        },
+        "required": [
+          "service",
+          "version"
+        ]
+      }
+    }
+  }
+}

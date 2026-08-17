@@ -1,3 +1,4 @@
+import { getCorrelationId } from './correlation.context';
 import { CorrelationMiddleware } from './correlation.middleware';
 import { CORRELATION_ID_HEADER } from './correlation.constants';
 
@@ -43,5 +44,20 @@ describe('CorrelationMiddleware', () => {
     expect(req.correlationId).toBe(provided);
     expect(res.getHeader(CORRELATION_ID_HEADER)).toBe(provided);
     expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('makes the id available via the correlation context during the request', () => {
+    const provided = 'ctx-check-9';
+    const req: any = { headers: { [CORRELATION_ID_HEADER]: provided } };
+    const res = mockRes();
+
+    let seen: string | undefined;
+    const next = () => {
+      seen = getCorrelationId();
+    };
+
+    middleware.use(req, res, next);
+
+    expect(seen).toBe(provided);
   });
 });

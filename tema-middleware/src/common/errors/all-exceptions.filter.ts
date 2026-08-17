@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { getCorrelationId } from '../correlation/correlation.context';
 import { httpStatusToErrorCode } from './error-codes';
 
 /**
@@ -26,7 +27,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     const requestId = String(
-      (request as any)?.id ?? (request as any)?.correlationId ?? '',
+      (request as any)?.id ??
+        (request as any)?.correlationId ??
+        getCorrelationId() ??
+        '',
     );
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;

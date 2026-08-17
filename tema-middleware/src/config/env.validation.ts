@@ -1,5 +1,6 @@
 import { plainToInstance, Type } from 'class-transformer';
 import {
+  IsBooleanString,
   IsEnum,
   IsInt,
   IsOptional,
@@ -57,6 +58,10 @@ export class EnvironmentVariables {
   @IsEnum(LogLevel)
   @IsOptional()
   LOG_LEVEL: LogLevel = LogLevel.Info;
+
+  @IsBooleanString()
+  @IsOptional()
+  SWAGGER_ENABLED?: string;
 }
 
 export function validateEnv(
