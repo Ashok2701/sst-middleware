@@ -160,6 +160,22 @@ cp .env.example .env
 | `SAGE_X3_HEALTH_PATH` | `/` | Path used for the connectivity probe |
 | `SAGE_X3_RETRY_MAX_ATTEMPTS` / `SAGE_X3_RETRY_INITIAL_DELAY` | `1` / `200` | Retry hints |
 
+### Phase 3.1 authentication variables (all optional; auth defaults OFF)
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `AUTH_ENABLED` | `false` | Enable bearer-token authentication (app starts fine when off) |
+| `AUTH_PROVIDER` | `dev` | `dev` (HS256, non-prod only) or `oidc` (RS256/JWKS) |
+| `AUTH_ISSUER` | — | Expected token issuer (`iss`) |
+| `AUTH_AUDIENCE` | — | Expected token audience (`aud`) |
+| `AUTH_JWKS_URI` | — | HTTPS JWKS endpoint (oidc provider) |
+| `AUTH_DEV_SECRET` | — | Dev-only HS256 secret (≥32 chars); never a real credential |
+| `AUTH_CLOCK_TOLERANCE` | `5` | Clock skew tolerance (seconds) |
+
+The `dev` provider is for development/tests only and **fails startup if used in
+production**. Health/readiness/version/integration-health remain public; only
+identity-scoped routes (e.g. `/me`) require a token when auth is enabled.
+
 `DATABASE_URL` remains a placeholder (TEMA's own datastore is undecided). SQL
 Server configuration is introduced separately and does not reuse `DATABASE_URL`.
 
@@ -347,6 +363,44 @@ Sage X3 to external callers.
 ---
 
 ## 13. Current phase
+
+**Phase 3.2 — Authorization / RBAC foundation: COMPLETE.**
+
+- `src/common/authorization/`: global `AuthorizationGuard` (runs after the
+  Phase 3.1 `AuthGuard`), `AuthorizationService`, `@Roles(...)` / `@Permissions(...)`
+  decorators, and safe errors.
+- Reads `roles[]` / `permissions[]` from the canonical `AuthenticatedUser`
+  (no token re-parsing, no invented claims).
+- **Authentication vs authorization:** `AuthGuard` answers "who is the user?"
+  (401 if unauthenticated); `AuthorizationGuard` answers "what may they do?"
+  (403 if authenticated but not permitted).
+- **Deterministic rule:** no `@Roles`/`@Permissions` metadata ⇒ authentication
+  alone suffices. Within `@Roles` the user needs ANY listed role (OR); within
+  `@Permissions` ANY listed permission (OR); when BOTH decorators are present,
+  BOTH must pass (AND). Fails closed — empty/unknown roles or permissions never
+  grant access; missing user context ⇒ 401.
+- `@Public()` still bypasses both guards; `/health`, `/ready`, `/version`,
+  `/health/integrations` remain public.
+- Authorization denials are logged (correlationId, method, path, userId,
+  required role/permission — never tokens/claims) and recorded via the Phase 2
+  audit foundation (`AUTHORIZATION_DENIED`). Errors: `AUTHORIZATION_REQUIRED`
+  (401) / `FORBIDDEN` (403), `{code, message, requestId}`, no leakage.
+
+**How future business APIs apply authorization:**
+```ts
+@Roles('TECHNICIAN')
+@Permissions('job.update')
+@Get('jobs/:id')
+getJob() { /* reached only if authenticated AND authorized */ }
+```
+
+> **Limitation:** the final client/WorkSuite role & permission claim mapping is
+> **pending identity-provider confirmation**. The framework is provider-agnostic
+> and configuration/claim-driven; no production role catalogue is hard-coded.
+
+---
+
+## 13b. Earlier phases
 
 **Phase 1 — Project Foundation: COMPLETE & verified.**
 

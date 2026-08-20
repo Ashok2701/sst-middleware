@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Public } from '../common/auth/public.decorator';
 import { IntegrationHealthResponse } from './integration-health.dto';
 import { IntegrationRegistry } from './integration-registry.service';
 
@@ -9,6 +10,7 @@ import { IntegrationRegistry } from './integration-registry.service';
  * Never exposes credentials or connection strings.
  */
 @ApiTags('Health')
+@Public()
 @Controller('health')
 export class IntegrationHealthController {
   constructor(private readonly registry: IntegrationRegistry) {}

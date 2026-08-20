@@ -37,6 +37,7 @@ describe('Swagger (e2e)', () => {
       expect(paths.sort()).toEqual([
         '/health',
         '/health/integrations',
+        '/me',
         '/ready',
         '/version',
       ]);

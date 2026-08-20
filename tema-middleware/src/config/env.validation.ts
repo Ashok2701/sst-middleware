@@ -30,6 +30,11 @@ export enum SageAuthTypeEnum {
   ApiKey = 'apikey',
 }
 
+export enum AuthProviderEnum {
+  Dev = 'dev',
+  Oidc = 'oidc',
+}
+
 /**
  * Strongly-typed schema for the environment variables the app depends on.
  * Validation runs at startup so misconfiguration fails fast and loudly.
@@ -193,6 +198,36 @@ export class EnvironmentVariables {
   @IsInt()
   @IsOptional()
   RATE_LIMIT_LIMIT?: number;
+
+  // ----- Authentication (Phase 3.1) -----
+  @IsBooleanString()
+  @IsOptional()
+  AUTH_ENABLED?: string;
+
+  @IsEnum(AuthProviderEnum)
+  @IsOptional()
+  AUTH_PROVIDER?: AuthProviderEnum;
+
+  @IsString()
+  @IsOptional()
+  AUTH_ISSUER?: string;
+
+  @IsString()
+  @IsOptional()
+  AUTH_AUDIENCE?: string;
+
+  @IsString()
+  @IsOptional()
+  AUTH_JWKS_URI?: string;
+
+  @IsString()
+  @IsOptional()
+  AUTH_DEV_SECRET?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  AUTH_CLOCK_TOLERANCE?: number;
 }
 
 export function validateEnv(

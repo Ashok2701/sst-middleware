@@ -34,6 +34,25 @@ integrations adapter strategy doc.
 - Internal GET /health/integrations (does not affect /health or /ready).
 - Tests: 71 unit + 18 e2e, all passing. Verified by testing agent (iteration_2.json, 100%).
 
+### Phase 3.1 (2026-08) — Authentication foundation
+- Provider-agnostic `IdentityProvider` abstraction + global `AuthGuard` (Bearer/JWT),
+  no-op when `AUTH_ENABLED=false`; `@Public()` keeps health/ready/version/integrations public.
+- Dev HS256 provider (config-gated, refused in production) + OIDC/JWKS RS256 provider
+  (pluggable via `AUTH_PROVIDER`, ready for the client's real IdP incl. future WorkSuite OIDC).
+- Canonical `AuthenticatedUser` (no invented claims); `GET /me`; safe error codes
+  AUTHENTICATION_REQUIRED / AUTHENTICATION_FAILED / TOKEN_EXPIRED with requestId; no token/secret leakage.
+- OpenAPI Bearer scheme. Tests: 82 unit + 31 e2e all pass. Verified by testing agent (iteration_3.json, 100%).
+
+### Phase 3.2 (2026-08) — Authorization / RBAC foundation
+- Global `AuthorizationGuard` (runs after `AuthGuard`) + `AuthorizationService` + `@Roles`/`@Permissions`
+  decorators, reading roles[]/permissions[] from the canonical AuthenticatedUser (no token re-parse, no invented claims).
+- Deterministic rule: no metadata ⇒ authN suffices; within-type OR, across-type AND; fails closed
+  (empty/unknown ⇒ deny; missing user ⇒ 401). `@Public()` bypass preserved.
+- Errors AUTHORIZATION_REQUIRED (401) / FORBIDDEN (403) via existing filter; denials logged + audited
+  (AUTHORIZATION_DENIED) with no token/claim leakage. OpenAPI unchanged (no business paths).
+- Final client/WorkSuite role→permission mapping pending IdP confirmation (framework is claim-driven).
+- Tests: 89 unit + 42 e2e all pass. Verified by testing agent (iteration_4.json, 100%).
+
 ## Not implemented (by design / stop conditions)
 No business workflows/endpoints; no invented Sage/SQL operations (contracts not provided);
 FSM, FSM Scheduler, WorkSuite, Lead Perfection integrations; OAuth/OIDC provider; RBAC roles;

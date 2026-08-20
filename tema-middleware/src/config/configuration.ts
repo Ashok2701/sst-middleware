@@ -51,6 +51,18 @@ export interface RateLimitConfig {
   limit: number;
 }
 
+export type AuthProvider = 'dev' | 'oidc';
+
+export interface AuthConfig {
+  enabled: boolean;
+  provider: AuthProvider;
+  issuer?: string;
+  audience?: string;
+  jwksUri?: string;
+  devSecret?: string;
+  clockToleranceSeconds: number;
+}
+
 export interface AppConfig {
   nodeEnv: string;
   port: number;
@@ -62,6 +74,7 @@ export interface AppConfig {
   sqlServer: SqlServerConfig;
   sageX3: SageX3Config;
   rateLimit: RateLimitConfig;
+  auth: AuthConfig;
 }
 
 function resolveSwaggerEnabled(nodeEnv: string): boolean {
@@ -136,6 +149,16 @@ export default (): AppConfig => {
       enabled: parseBool(process.env.RATE_LIMIT_ENABLED, true),
       ttlMs: parseIntEnv(process.env.RATE_LIMIT_TTL, 60000),
       limit: parseIntEnv(process.env.RATE_LIMIT_LIMIT, 300),
+    },
+
+    auth: {
+      enabled: parseBool(process.env.AUTH_ENABLED, false),
+      provider: (process.env.AUTH_PROVIDER as AuthProvider) ?? 'dev',
+      issuer: process.env.AUTH_ISSUER,
+      audience: process.env.AUTH_AUDIENCE,
+      jwksUri: process.env.AUTH_JWKS_URI,
+      devSecret: process.env.AUTH_DEV_SECRET,
+      clockToleranceSeconds: parseIntEnv(process.env.AUTH_CLOCK_TOLERANCE, 5),
     },
   };
 };

@@ -1,6 +1,33 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "summary": "Return the current authenticated identity",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhoAmIResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "HealthController_liveness",
@@ -92,7 +119,7 @@
   },
   "info": {
     "title": "TEMA Middleware API",
-    "description": "Enterprise integration middleware platform. Phase 1.5: foundation only (health, readiness, version). External integrations (FSM, FSM Scheduler, Sage X3, SQL, WorkSuite, Lead Perfection) are NOT implemented yet.",
+    "description": "Enterprise integration middleware platform. Foundation endpoints only (health, readiness, version, integration health, identity). External business integrations (FSM, FSM Scheduler, Sage X3, SQL, WorkSuite, Lead Perfection) are NOT implemented yet.",
     "version": "0.1.0",
     "contact": {}
   },
@@ -104,11 +131,83 @@
     {
       "name": "Version",
       "description": "Service version information"
+    },
+    {
+      "name": "Auth",
+      "description": "Authenticated identity"
     }
   ],
   "servers": [],
   "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "Bearer token issued by the configured identity provider."
+      }
+    },
     "schemas": {
+      "AuthenticatedUserDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "example": "user-123"
+          },
+          "username": {
+            "type": "string",
+            "example": "jane.doe"
+          },
+          "email": {
+            "type": "string",
+            "example": "jane@example.com"
+          },
+          "roles": {
+            "example": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissions": {
+            "example": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "identityProvider": {
+            "type": "string",
+            "example": "dev"
+          }
+        },
+        "required": [
+          "userId",
+          "roles",
+          "permissions",
+          "identityProvider"
+        ]
+      },
+      "WhoAmIResponse": {
+        "type": "object",
+        "properties": {
+          "authenticated": {
+            "type": "boolean",
+            "example": true
+          },
+          "user": {
+            "$ref": "#/components/schemas/AuthenticatedUserDto"
+          },
+          "message": {
+            "type": "string",
+            "example": "Authentication is disabled"
+          }
+        },
+        "required": [
+          "authenticated"
+        ]
+      },
       "HealthResponse": {
         "type": "object",
         "properties": {
