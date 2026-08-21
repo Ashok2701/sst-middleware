@@ -115,6 +115,63 @@
           "Health"
         ]
       }
+    },
+    "/api/technicians": {
+      "get": {
+        "operationId": "TechniciansController_list",
+        "summary": "List technicians for scheduling",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechniciansResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing technician.read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Technician data source unavailable/not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Technicians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -320,6 +377,99 @@
         },
         "required": [
           "integrations"
+        ]
+      },
+      "TechnicianDto": {
+        "type": "object",
+        "properties": {
+          "technicianId": {
+            "type": "string",
+            "example": "T-1001"
+          },
+          "name": {
+            "type": "string",
+            "example": "Jane Doe"
+          },
+          "status": {
+            "type": "string",
+            "example": "ACTIVE"
+          },
+          "branch": {
+            "type": "string",
+            "example": "Denver"
+          },
+          "region": {
+            "type": "string",
+            "example": "Mountain"
+          },
+          "crew": {
+            "type": "string",
+            "example": "Crew-7"
+          },
+          "skills": {
+            "example": [
+              "install",
+              "service"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "technicianId"
+        ]
+      },
+      "TechniciansResponse": {
+        "type": "object",
+        "properties": {
+          "technicians": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TechnicianDto"
+            }
+          },
+          "count": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "technicians",
+          "count"
+        ]
+      },
+      "ApiErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "INTERNAL_ERROR",
+            "description": "Stable, machine-readable error code."
+          },
+          "message": {
+            "type": "string",
+            "example": "An unexpected error occurred",
+            "description": "Human-readable, safe error message (no internal details)."
+          },
+          "requestId": {
+            "type": "string",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "description": "Correlation / request id for tracing this call."
+          },
+          "details": {
+            "type": "array",
+            "description": "Optional field-level validation details.",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId"
         ]
       }
     }

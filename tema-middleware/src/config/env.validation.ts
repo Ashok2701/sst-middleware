@@ -228,6 +228,11 @@ export class EnvironmentVariables {
   @IsInt()
   @IsOptional()
   AUTH_CLOCK_TOLERANCE?: number;
+
+  // ----- Business-API data sources (Phase 3.3) -----
+  @IsString()
+  @IsOptional()
+  SQL_TECHNICIANS_PROCEDURE?: string;
 }
 
 export function validateEnv(

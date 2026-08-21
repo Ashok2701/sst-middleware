@@ -75,6 +75,7 @@ export interface AppConfig {
   sageX3: SageX3Config;
   rateLimit: RateLimitConfig;
   auth: AuthConfig;
+  technicians: { procedure?: string };
 }
 
 function resolveSwaggerEnabled(nodeEnv: string): boolean {
@@ -159,6 +160,12 @@ export default (): AppConfig => {
       jwksUri: process.env.AUTH_JWKS_URI,
       devSecret: process.env.AUTH_DEV_SECRET,
       clockToleranceSeconds: parseIntEnv(process.env.AUTH_CLOCK_TOLERANCE, 5),
+    },
+
+    // Business-API data sources. The actual SQL object name is supplied via
+    // configuration (schema not yet provided) - no table/proc names invented.
+    technicians: {
+      procedure: process.env.SQL_TECHNICIANS_PROCEDURE,
     },
   };
 };

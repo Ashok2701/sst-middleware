@@ -53,6 +53,17 @@ integrations adapter strategy doc.
 - Final client/WorkSuite role→permission mapping pending IdP confirmation (framework is claim-driven).
 - Tests: 89 unit + 42 e2e all pass. Verified by testing agent (iteration_4.json, 100%).
 
+### Phase 3.3 (2026-08) — Business API foundation + first business API
+- `src/modules/technicians/` (controller, service, mapper, models, dto). `GET /api/technicians`
+  requires auth + `technician.read` permission; flows App→Controller→Service→IntegrationCore
+  (transaction tracking)→SqlServerAdapter (parameterized stored proc)→mapper→canonical Technician.
+- SQL source is config-driven (`SQL_TECHNICIANS_PROCEDURE`, aliased to canonical columns) because the
+  real schema was NOT provided — no table/column/proc names invented; returns 503 until configured.
+- Safe SQL-failure mapping (502/504) with zero secret/SQL leakage; correlation preserved; OpenAPI documents
+  the endpoint (bearer, 200/401/403/503). Confirmed auth architecture documented (contractors=WorkSuite local
+  hashed password; employees=Entra/AAD; WorkSuite is NOT an IdP).
+- Tests: 96 unit + 50 e2e all pass. Verified by testing agent (iteration_5.json, 100%).
+
 ## Not implemented (by design / stop conditions)
 No business workflows/endpoints; no invented Sage/SQL operations (contracts not provided);
 FSM, FSM Scheduler, WorkSuite, Lead Perfection integrations; OAuth/OIDC provider; RBAC roles;

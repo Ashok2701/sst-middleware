@@ -364,39 +364,58 @@ Sage X3 to external callers.
 
 ## 13. Current phase
 
-**Phase 3.2 — Authorization / RBAC foundation: COMPLETE.**
+**Phase 3.3 — Business API foundation + first business API (`GET /api/technicians`): COMPLETE.**
 
-- `src/common/authorization/`: global `AuthorizationGuard` (runs after the
-  Phase 3.1 `AuthGuard`), `AuthorizationService`, `@Roles(...)` / `@Permissions(...)`
-  decorators, and safe errors.
-- Reads `roles[]` / `permissions[]` from the canonical `AuthenticatedUser`
-  (no token re-parsing, no invented claims).
-- **Authentication vs authorization:** `AuthGuard` answers "who is the user?"
-  (401 if unauthenticated); `AuthorizationGuard` answers "what may they do?"
-  (403 if authenticated but not permitted).
-- **Deterministic rule:** no `@Roles`/`@Permissions` metadata ⇒ authentication
-  alone suffices. Within `@Roles` the user needs ANY listed role (OR); within
-  `@Permissions` ANY listed permission (OR); when BOTH decorators are present,
-  BOTH must pass (AND). Fails closed — empty/unknown roles or permissions never
-  grant access; missing user context ⇒ 401.
-- `@Public()` still bypasses both guards; `/health`, `/ready`, `/version`,
-  `/health/integrations` remain public.
-- Authorization denials are logged (correlationId, method, path, userId,
-  required role/permission — never tokens/claims) and recorded via the Phase 2
-  audit foundation (`AUTHORIZATION_DENIED`). Errors: `AUTHORIZATION_REQUIRED`
-  (401) / `FORBIDDEN` (403), `{code, message, requestId}`, no leakage.
+- Business module structure under `src/modules/technicians/` (controller, service,
+  mapper, models, dto) following the mandated flow:
+  `TEMA App → TEMA API → Business Service → Integration Core → SQL Server Adapter → mapper → canonical response`.
+- `GET /api/technicians` requires authentication (`AuthGuard`) and the
+  `technician.read` permission (`AuthorizationGuard`); wrapped in integration
+  transaction tracking; goes through the SQL Server adapter (parameterized stored
+  procedure) — no direct DB access in the controller/service.
+- Consumers receive the canonical `Technician` model, never raw SQL rows.
+- OpenAPI documents the endpoint (Bearer security; 200/401/403/503).
 
-**How future business APIs apply authorization:**
-```ts
-@Roles('TECHNICIAN')
-@Permissions('job.update')
-@Get('jobs/:id')
-getJob() { /* reached only if authenticated AND authorized */ }
+### `GET /api/technicians` contract
+
+| Aspect | Value |
+| --- | --- |
+| Auth | Bearer JWT required (401 `AUTHENTICATION_REQUIRED` if missing/invalid) |
+| Authorization | Permission `technician.read` (403 `FORBIDDEN` if absent) |
+| Response 200 | `{ technicians: Technician[], count: number }` |
+| Technician | `{ technicianId, name?, status?, branch?, region?, crew?, skills?[] }` |
+| 503 | `INTEGRATION_NOT_CONFIGURED` until the SQL source is configured |
+| 502/504 | Safe `CONNECTION_ERROR` / `TIMEOUT_ERROR` on SQL failure (no raw SQL/creds) |
+
+### SQL source & mapping (schema PENDING)
+
+The actual SQL Server technician schema was **not provided**, so no table/column/
+procedure names are invented. The source is **configuration-driven** via
+`SQL_TECHNICIANS_PROCEDURE`: a stored procedure that must return columns **aliased
+to the canonical names**:
+
+```text
+SQL source (aliased)   →   TEMA canonical   →   Scheduler response
+  technicianId               technicianId         technicianId
+  name                       name                 name
+  status                     status               status
+  branch / region / crew     branch/region/crew   branch/region/crew
+  skills (array or CSV)      skills[]             skills[]
 ```
 
-> **Limitation:** the final client/WorkSuite role & permission claim mapping is
-> **pending identity-provider confirmation**. The framework is provider-agnostic
-> and configuration/claim-driven; no production role catalogue is hard-coded.
+Until `SQL_TECHNICIANS_PROCEDURE` is set, the endpoint returns a safe 503. The
+proposed permission name `technician.read` and this mapping are easy to change in
+one place once confirmed.
+
+### Confirmed authentication architecture (documentation only)
+
+- **Contractors:** WorkSuite holds the contractor record + hashed password → TEMA
+  performs **local contractor authentication** (WorkSuite is **NOT** an identity provider).
+- **Employees:** Microsoft Entra / Azure AD → TEMA.
+
+**Pending (not guessed):** WorkSuite password hashing algorithm/params, webhook
+spec + auth, exact contractor fields, final roles, crew/branch/region mapping,
+Dev/UAT/Prod integration details, and the actual technician SQL schema.
 
 ---
 

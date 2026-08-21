@@ -20,6 +20,7 @@ import configuration from './config/configuration';
 import { validateEnv } from './config/env.validation';
 import { HealthModule } from './health/health.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { TechniciansModule } from './modules/technicians/technicians.module';
 import { VersionModule } from './version/version.module';
 
 @Module({
@@ -44,6 +45,8 @@ import { VersionModule } from './version/version.module';
     HealthModule,
     VersionModule,
     IntegrationsModule,
+    // Phase 3.3 first business API.
+    TechniciansModule,
   ],
   providers: [
     // Global, consistent error handling for every route.

@@ -35,6 +35,7 @@ describe('Swagger (e2e)', () => {
       expect(res.body.openapi).toMatch(/^3\./);
       const paths = Object.keys(res.body.paths);
       expect(paths.sort()).toEqual([
+        '/api/technicians',
         '/health',
         '/health/integrations',
         '/me',
