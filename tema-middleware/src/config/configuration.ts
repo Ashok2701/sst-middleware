@@ -13,7 +13,23 @@ function parseIntEnv(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+/** Optional int - returns undefined when unset (used for PENDING config). */
+function parseOptInt(value: string | undefined): number | undefined {
+  if (value === undefined || value === '') return undefined;
+  const parsed = parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+/** Optional non-empty string - returns undefined when unset/blank. */
+function optStr(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  const s = value.trim();
+  return s.length ? s : undefined;
+}
+
 export type SageAuthType = 'none' | 'basic' | 'apikey';
+
+export type WorksuiteApiAuthType = 'none' | 'bearer' | 'apikey';
 
 export interface SqlServerConfig {
   enabled: boolean;
@@ -63,6 +79,37 @@ export interface AuthConfig {
   clockToleranceSeconds: number;
 }
 
+export interface WorksuiteConfig {
+  enabled: boolean;
+  baseUrl?: string;
+  timeoutMs: number;
+  /** PENDING actual mechanism: none | bearer | apikey. */
+  apiAuthType: WorksuiteApiAuthType;
+  apiToken?: string;
+  apiKey?: string;
+  apiKeyHeader: string;
+  /** Contractor resource path template with `{id}` placeholder. PENDING. */
+  contractorPathTemplate?: string;
+  healthPath: string;
+  retryMaxAttempts: number;
+  retryInitialDelayMs: number;
+  webhook: {
+    enabled: boolean;
+    /** HMAC shared secret. PENDING (never committed). */
+    secret?: string;
+    toleranceSeconds: number;
+  };
+  password: {
+    /** Proposed: PBKDF2-SHA256. */
+    algorithm: string;
+    /** All PBKDF2 params are PENDING WorkSuite confirmation. */
+    iterations?: number;
+    saltLength?: number;
+    keyLength?: number;
+    encoding?: string;
+  };
+}
+
 export interface AppConfig {
   nodeEnv: string;
   port: number;
@@ -75,6 +122,7 @@ export interface AppConfig {
   sageX3: SageX3Config;
   rateLimit: RateLimitConfig;
   auth: AuthConfig;
+  worksuite: WorksuiteConfig;
   technicians: { procedure?: string };
 }
 
@@ -160,6 +208,42 @@ export default (): AppConfig => {
       jwksUri: process.env.AUTH_JWKS_URI,
       devSecret: process.env.AUTH_DEV_SECRET,
       clockToleranceSeconds: parseIntEnv(process.env.AUTH_CLOCK_TOLERANCE, 5),
+    },
+
+    worksuite: {
+      enabled: parseBool(process.env.WORKSUITE_ENABLED, false),
+      baseUrl: optStr(process.env.WORKSUITE_BASE_URL),
+      timeoutMs: parseIntEnv(process.env.WORKSUITE_API_TIMEOUT, 30000),
+      apiAuthType:
+        (process.env.WORKSUITE_API_AUTH_TYPE as WorksuiteApiAuthType) ?? 'none',
+      apiToken: optStr(process.env.WORKSUITE_API_TOKEN),
+      apiKey: optStr(process.env.WORKSUITE_API_KEY),
+      apiKeyHeader: process.env.WORKSUITE_API_KEY_HEADER ?? 'x-api-key',
+      contractorPathTemplate: optStr(process.env.WORKSUITE_CONTRACTOR_PATH),
+      healthPath: process.env.WORKSUITE_HEALTH_PATH ?? '/',
+      retryMaxAttempts: parseIntEnv(
+        process.env.WORKSUITE_RETRY_MAX_ATTEMPTS,
+        3,
+      ),
+      retryInitialDelayMs: parseIntEnv(
+        process.env.WORKSUITE_RETRY_INITIAL_DELAY,
+        200,
+      ),
+      webhook: {
+        enabled: parseBool(process.env.WORKSUITE_WEBHOOK_ENABLED, false),
+        secret: optStr(process.env.WORKSUITE_WEBHOOK_SECRET),
+        toleranceSeconds: parseIntEnv(
+          process.env.WORKSUITE_WEBHOOK_TOLERANCE_SECONDS,
+          300,
+        ),
+      },
+      password: {
+        algorithm: process.env.WORKSUITE_PASSWORD_ALGORITHM ?? 'PBKDF2-SHA256',
+        iterations: parseOptInt(process.env.WORKSUITE_PBKDF2_ITERATIONS),
+        saltLength: parseOptInt(process.env.WORKSUITE_PBKDF2_SALT_LENGTH),
+        keyLength: parseOptInt(process.env.WORKSUITE_PBKDF2_KEY_LENGTH),
+        encoding: optStr(process.env.WORKSUITE_PASSWORD_ENCODING),
+      },
     },
 
     // Business-API data sources. The actual SQL object name is supplied via

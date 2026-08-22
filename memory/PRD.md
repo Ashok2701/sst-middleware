@@ -64,6 +64,23 @@ integrations adapter strategy doc.
   hashed password; employees=Entra/AAD; WorkSuite is NOT an IdP).
 - Tests: 96 unit + 50 e2e all pass. Verified by testing agent (iteration_5.json, 100%).
 
+### Phase 3.4 (2026-06) — WorkSuite contractor integration foundation
+- WorkSuite Partner API adapter `src/integrations/worksuite/` (auth/client/adapter/module) mirroring the
+  Sage X3 pattern: config-driven base URL/timeout/auth (none|bearer|apikey, PENDING), correlation propagation,
+  bounded retry, safe error mapping, connectivity check, config-driven `getContractor(id)` (contractor path
+  template PENDING → fails safe). Registered in IntegrationRegistry + /health/integrations.
+- Webhook `POST /api/webhooks/worksuite` (public, HMAC-authenticated). `main.ts` now uses `rawBody: true` so
+  HMAC-SHA256 is verified over the RAW body (constant-time), with timestamp freshness + Event-Id idempotency
+  (reusing Phase 2 IdempotencyService). Notification-and-pull: created/updated/reactivated → pull+map+upsert,
+  archived → deactivate. Audit events (CREATED/UPDATED/ARCHIVED/REACTIVATED/SYNC_FAILED/WEBHOOK_REJECTED) with
+  safe metadata only. No secret/hash/signature/body leakage.
+- Contractor domain `src/modules/contractors/`: canonical Contractor (confirmed fields only, NO Branch/Region;
+  4 roles, one per contractor), isolated ContractorMapper, pluggable in-memory ContractorStore, ContractorsService,
+  ContractorInitialLoadService (Option A batch / Option B CSV boundary, PENDING), WorksuitePasswordVerifier
+  (PBKDF2-SHA256, fully config-driven, documented NOT yet WorkSuite-compatible until real params/test vectors).
+- All WorkSuite config env-driven + validated; `.env.example` updated with PENDING markers. Phases 1–3.3 untouched.
+- Tests: 149 unit + 60 e2e all pass (self-tested: build/lint/openapi/live signed-webhook smoke; secret non-leak verified).
+
 ## Not implemented (by design / stop conditions)
 No business workflows/endpoints; no invented Sage/SQL operations (contracts not provided);
 FSM, FSM Scheduler, WorkSuite, Lead Perfection integrations; OAuth/OIDC provider; RBAC roles;

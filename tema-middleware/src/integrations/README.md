@@ -17,6 +17,11 @@ src/integrations/
 │   ├── sage-x3.client.ts
 │   ├── sage-x3.adapter.ts
 │   └── sage-x3.module.ts
+├── worksuite/            # WorkSuite Partner API adapter (Phase 3.4; see worksuite/README.md)
+│   ├── worksuite.auth.ts
+│   ├── worksuite.client.ts
+│   ├── worksuite.adapter.ts
+│   └── worksuite.module.ts
 ├── integration-registry.service.ts     # collects adapters for health
 ├── integration-health.controller.ts    # GET /health/integrations
 └── integrations.module.ts
@@ -92,6 +97,14 @@ No core changes are required.
 
 ## WorkSuite & Lead Perfection
 
-Future **optional** integrations. **No implementation** exists because client
-technical specifications have not been provided. Their absence never prevents
-TEMA from starting, testing or operating (they will be `*_ENABLED=false`).
+**WorkSuite** contractor integration **foundation** is implemented in Phase 3.4
+(Partner API adapter + webhook + contractor sync + PBKDF2 verification
+abstraction), built on the Integration Core. WorkSuite is **NOT** an identity
+provider — TEMA is notified by webhook and pulls the current contractor record.
+Final WorkSuite specifications (PBKDF2 params, Partner API auth/path, webhook
+env, field list, role mapping) are **PENDING**; see
+[`worksuite/README.md`](./worksuite/README.md).
+
+**Lead Perfection** remains a future optional integration with **no
+implementation** (spec not provided). Its absence never prevents TEMA from
+starting, testing or operating (`*_ENABLED=false`).

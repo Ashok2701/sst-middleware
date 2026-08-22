@@ -172,6 +172,73 @@
           }
         ]
       }
+    },
+    "/api/webhooks/worksuite": {
+      "post": {
+        "operationId": "WorksuiteWebhookController_receive",
+        "summary": "Receive a WorkSuite contractor lifecycle webhook",
+        "parameters": [
+          {
+            "name": "x-worksuite-timestamp",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-worksuite-signature",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-worksuite-event-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorksuiteWebhookResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Signature/timestamp/event-id verification failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Webhook disabled or not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "WorkSuite Webhooks"
+        ]
+      }
     }
   },
   "info": {
@@ -470,6 +537,37 @@
           "code",
           "message",
           "requestId"
+        ]
+      },
+      "WorksuiteWebhookResponse": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "example": true
+          },
+          "eventId": {
+            "type": "string",
+            "example": "evt_01HXY..."
+          },
+          "event": {
+            "type": "string",
+            "example": "contractor.updated"
+          },
+          "status": {
+            "type": "string",
+            "example": "processed",
+            "enum": [
+              "processed",
+              "ignored"
+            ]
+          }
+        },
+        "required": [
+          "accepted",
+          "eventId",
+          "event",
+          "status"
         ]
       }
     }

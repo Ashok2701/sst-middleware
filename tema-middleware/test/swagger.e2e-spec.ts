@@ -36,6 +36,7 @@ describe('Swagger (e2e)', () => {
       const paths = Object.keys(res.body.paths);
       expect(paths.sort()).toEqual([
         '/api/technicians',
+        '/api/webhooks/worksuite',
         '/health',
         '/health/integrations',
         '/me',
@@ -47,12 +48,14 @@ describe('Swagger (e2e)', () => {
     it('does NOT include any future/invented integration endpoints', async () => {
       const res = await request(app.getHttpServer()).get('/docs-json');
       const paths = Object.keys(res.body.paths).join(' ').toLowerCase();
-      expect(paths).not.toContain('worksuite');
+      // The WorkSuite webhook IS implemented (Phase 3.4); no OTHER worksuite
+      // paths (e.g. contractor CRUD) or unimplemented integrations exist.
       expect(paths).not.toContain('lead-perfection');
       expect(paths).not.toContain('/sage');
       expect(paths).not.toContain('/sql');
       expect(paths).not.toContain('job-complete');
       expect(paths).not.toContain('purchase-receipt');
+      expect(paths).not.toContain('/api/contractors');
     });
 
     it('serves Swagger UI at /docs', async () => {

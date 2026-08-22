@@ -21,6 +21,7 @@ import { validateEnv } from './config/env.validation';
 import { HealthModule } from './health/health.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { TechniciansModule } from './modules/technicians/technicians.module';
+import { WorksuiteWebhookModule } from './modules/worksuite-webhook/worksuite-webhook.module';
 import { VersionModule } from './version/version.module';
 
 @Module({
@@ -47,6 +48,8 @@ import { VersionModule } from './version/version.module';
     IntegrationsModule,
     // Phase 3.3 first business API.
     TechniciansModule,
+    // Phase 3.4 WorkSuite contractor integration foundation.
+    WorksuiteWebhookModule,
   ],
   providers: [
     // Global, consistent error handling for every route.

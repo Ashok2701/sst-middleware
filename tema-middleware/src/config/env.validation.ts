@@ -35,6 +35,12 @@ export enum AuthProviderEnum {
   Oidc = 'oidc',
 }
 
+export enum WorksuiteApiAuthTypeEnum {
+  None = 'none',
+  Bearer = 'bearer',
+  ApiKey = 'apikey',
+}
+
 /**
  * Strongly-typed schema for the environment variables the app depends on.
  * Validation runs at startup so misconfiguration fails fast and loudly.
@@ -233,6 +239,90 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   SQL_TECHNICIANS_PROCEDURE?: string;
+
+  // ----- WorkSuite integration (Phase 3.4 - all optional / pending) -----
+  @IsBooleanString()
+  @IsOptional()
+  WORKSUITE_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_BASE_URL?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  WORKSUITE_API_TIMEOUT?: number;
+
+  @IsEnum(WorksuiteApiAuthTypeEnum)
+  @IsOptional()
+  WORKSUITE_API_AUTH_TYPE?: WorksuiteApiAuthTypeEnum;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_API_TOKEN?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_API_KEY_HEADER?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_CONTRACTOR_PATH?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_HEALTH_PATH?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  WORKSUITE_RETRY_MAX_ATTEMPTS?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  WORKSUITE_RETRY_INITIAL_DELAY?: number;
+
+  @IsBooleanString()
+  @IsOptional()
+  WORKSUITE_WEBHOOK_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_WEBHOOK_SECRET?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  WORKSUITE_WEBHOOK_TOLERANCE_SECONDS?: number;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_PASSWORD_ALGORITHM?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  WORKSUITE_PBKDF2_ITERATIONS?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  WORKSUITE_PBKDF2_SALT_LENGTH?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  WORKSUITE_PBKDF2_KEY_LENGTH?: number;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_PASSWORD_ENCODING?: string;
 }
 
 export function validateEnv(

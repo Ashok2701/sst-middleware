@@ -364,7 +364,28 @@ Sage X3 to external callers.
 
 ## 13. Current phase
 
-**Phase 3.3 — Business API foundation + first business API (`GET /api/technicians`): COMPLETE.**
+**Phase 3.4 — WorkSuite contractor integration foundation: COMPLETE.**
+
+Built on the existing Integration Core / Idempotency / Audit / Auth phases:
+
+- **Partner API adapter** (`src/integrations/worksuite/`) following the Sage X3
+  adapter pattern: configurable base URL/timeout/auth, correlation propagation,
+  retry, safe error mapping, connectivity check, config-driven `getContractor(id)`.
+- **Webhook** `POST /api/webhooks/worksuite` (public; HMAC-authenticated):
+  raw-body HMAC-SHA256 verification (constant-time), timestamp freshness,
+  Event-Id idempotency (reusing the Phase 2 `IdempotencyService`), then
+  notification-and-pull sync (created/updated/archived/reactivated) + audit.
+- **Canonical contractor** domain (model, isolated mapper, pluggable store,
+  sync service) — confirmed fields only, **no Branch/Region**.
+- **PBKDF2-SHA256 password-verification abstraction** — configuration-driven and
+  documented as **NOT yet WorkSuite-compatible** (parameters PENDING).
+- **Initial-load abstraction** (batch / CSV) — boundary only, PENDING contract.
+
+Full details, flows, env vars, local testing and confirmed-vs-pending list:
+**`src/integrations/worksuite/README.md`**. WorkSuite is **NOT** an identity
+provider (notification-and-pull model). Phases 1/1.5/2/3.1/3.2/3.3 are unchanged.
+
+Previous phase — **Phase 3.3 — Business API foundation + `GET /api/technicians`: COMPLETE.**
 
 - Business module structure under `src/modules/technicians/` (controller, service,
   mapper, models, dto) following the mandated flow:

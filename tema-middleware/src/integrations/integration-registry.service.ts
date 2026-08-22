@@ -3,6 +3,7 @@ import { IntegrationAdapter } from '../common/integration/interfaces/integration
 import { IntegrationHealth } from '../common/integration/models/integration-health';
 import { SageX3Adapter } from './sage-x3/sage-x3.adapter';
 import { SqlServerAdapter } from './sql-server/sql-server.adapter';
+import { WorksuiteAdapter } from './worksuite/worksuite.adapter';
 
 /**
  * Registry of the concrete integration adapters. New adapters are added here
@@ -14,10 +15,11 @@ export class IntegrationRegistry {
   constructor(
     private readonly sqlServer: SqlServerAdapter,
     private readonly sageX3: SageX3Adapter,
+    private readonly worksuite: WorksuiteAdapter,
   ) {}
 
   all(): IntegrationAdapter[] {
-    return [this.sqlServer, this.sageX3];
+    return [this.sqlServer, this.sageX3, this.worksuite];
   }
 
   /** Aggregated connectivity snapshot for all adapters (safe for /health). */

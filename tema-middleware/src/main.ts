@@ -1,11 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { setupSwagger, SWAGGER_PATH } from './swagger';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // `rawBody: true` preserves req.rawBody (used for WorkSuite webhook HMAC
+  // verification) WITHOUT disabling normal JSON parsing for other routes.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
 
   // Route all Nest framework logs through pino (structured logging).
   app.useLogger(app.get(Logger));
