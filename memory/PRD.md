@@ -81,6 +81,19 @@ integrations adapter strategy doc.
 - All WorkSuite config env-driven + validated; `.env.example` updated with PENDING markers. Phases 1–3.3 untouched.
 - Tests: 149 unit + 60 e2e all pass (self-tested: build/lint/openapi/live signed-webhook smoke; secret non-leak verified).
 
+### Connectivity wiring (2026-06) — real Sage X3 + SQL Server details received
+- Client provided REAL SQL Server + Sage X3 SOAP credentials. Stored ONLY in git-ignored `/app/tema-middleware/.env`
+  (never `.env.example`, never committed). No source/business logic changed. Goal was config + connectivity verification only.
+- SQL Server VERIFIED (live from this env): `SQL_SERVER_*` wired (host `tmsx3em.tema-systems.com:49360`, db `tbs`, user `sa`,
+  encrypt+trustServerCertificate). `/health/integrations` reports sql-server **UP** via the real adapter; `SELECT 1` OK and
+  read-only `FSM.XTECHNCN` reachable (6 rows). Helper: `scripts/check-sql.js` (credential-free, reads env).
+- Sage X3 endpoint VERIFIED reachable: WSDL `CAdxWebServiceXmlCC` returns HTTP 200 over TLS with basic auth
+  (Adonix/Sage `http://www.adonix.com/WSS`); cert is self-signed (ssl_verify=20) → trust-server-certificate required.
+  IMPORTANT: the endpoint is **SOAP**; the existing Phase-2 Sage adapter is **REST/JSON and cannot call it** — so
+  `SAGE_X3_ENABLED=false` and a dedicated SOAP adapter is a PENDING future step (SOAP creds/pool alias `FSM` stored in .env).
+- PENDING: SOAP Sage X3 adapter; real business operations (e.g. technicians from `FSM.XTECHNCN` — currently endpoint expects a
+  stored procedure, not a table, so a query-based mapping or a wrapping proc is needed).
+
 ## Not implemented (by design / stop conditions)
 No business workflows/endpoints; no invented Sage/SQL operations (contracts not provided);
 FSM, FSM Scheduler, WorkSuite, Lead Perfection integrations; OAuth/OIDC provider; RBAC roles;
