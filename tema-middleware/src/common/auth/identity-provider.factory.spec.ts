@@ -13,6 +13,7 @@ function cfg(partial: Partial<AuthConfig> = {}): AuthConfig {
     audience: 'tema-middleware',
     devSecret: 'a'.repeat(48),
     clockToleranceSeconds: 5,
+    tokenTtlSeconds: 3600,
     ...partial,
   };
 }

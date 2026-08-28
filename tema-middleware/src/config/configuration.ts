@@ -77,6 +77,26 @@ export interface AuthConfig {
   jwksUri?: string;
   devSecret?: string;
   clockToleranceSeconds: number;
+  /** TTL (seconds) for tokens MINTED at login (dev bridge only). */
+  tokenTtlSeconds: number;
+}
+
+/**
+ * Technician login (Phase 3.5) SQL source. Reads the existing Sage X3 / FSM
+ * technician table via the SQL adapter. Schema/table are configuration-driven;
+ * an optional stored procedure overrides the parameterized query. The X3 column
+ * names (XTECH_0, XTECHNCN_0, XPASSWRD_0, XLEADTECH_0) are fixed by TEMA.
+ */
+export interface TechnicianAuthConfig {
+  schema: string;
+  table: string;
+  /**
+   * Login username column. Default is the TEMA-stated `XTECHNCN_0`, but the
+   * exact column is configuration-driven because it must match the real table
+   * (e.g. the FSM `XTECHNCN` table exposes `XTECH_0`, not `XTECHNCN_0`).
+   */
+  usernameColumn: string;
+  loginProcedure?: string;
 }
 
 export interface WorksuiteConfig {
@@ -124,6 +144,7 @@ export interface AppConfig {
   auth: AuthConfig;
   worksuite: WorksuiteConfig;
   technicians: { procedure?: string };
+  technicianAuth: TechnicianAuthConfig;
 }
 
 function resolveSwaggerEnabled(nodeEnv: string): boolean {
@@ -208,6 +229,7 @@ export default (): AppConfig => {
       jwksUri: process.env.AUTH_JWKS_URI,
       devSecret: process.env.AUTH_DEV_SECRET,
       clockToleranceSeconds: parseIntEnv(process.env.AUTH_CLOCK_TOLERANCE, 5),
+      tokenTtlSeconds: parseIntEnv(process.env.AUTH_TOKEN_TTL, 3600),
     },
 
     worksuite: {
@@ -250,6 +272,17 @@ export default (): AppConfig => {
     // configuration (schema not yet provided) - no table/proc names invented.
     technicians: {
       procedure: process.env.SQL_TECHNICIANS_PROCEDURE,
+    },
+
+    // Technician login (Phase 3.5) - reads the existing Sage X3 / FSM
+    // technician table. Schema/table are config-driven; the X3 column names are
+    // fixed by TEMA (XTECH_0, XTECHNCN_0, XPASSWRD_0, XLEADTECH_0).
+    technicianAuth: {
+      schema: process.env.SQL_TECHNICIAN_SCHEMA ?? 'dbo',
+      table: process.env.SQL_TECHNICIAN_TABLE ?? 'XTECHNCN',
+      usernameColumn:
+        process.env.SQL_TECHNICIAN_USERNAME_COLUMN ?? 'XTECHNCN_0',
+      loginProcedure: optStr(process.env.SQL_TECHNICIAN_LOGIN_PROCEDURE),
     },
   };
 };

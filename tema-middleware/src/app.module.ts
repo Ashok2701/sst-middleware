@@ -21,6 +21,7 @@ import { validateEnv } from './config/env.validation';
 import { HealthModule } from './health/health.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { TechniciansModule } from './modules/technicians/technicians.module';
+import { TechnicianAuthModule } from './modules/technician-auth/technician-auth.module';
 import { WorksuiteWebhookModule } from './modules/worksuite-webhook/worksuite-webhook.module';
 import { VersionModule } from './version/version.module';
 
@@ -29,6 +30,9 @@ import { VersionModule } from './version/version.module';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
+      // Tests are hermetic: never load a developer .env under NODE_ENV=test
+      // (each e2e sets the exact process.env it needs).
+      ignoreEnvFile: process.env.NODE_ENV === 'test',
       load: [configuration],
       validate: validateEnv,
     }),
@@ -50,6 +54,8 @@ import { VersionModule } from './version/version.module';
     TechniciansModule,
     // Phase 3.4 WorkSuite contractor integration foundation.
     WorksuiteWebhookModule,
+    // Phase 3.5 technician / lead-technician login foundation.
+    TechnicianAuthModule,
   ],
   providers: [
     // Global, consistent error handling for every route.

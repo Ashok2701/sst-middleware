@@ -94,6 +94,20 @@ integrations adapter strategy doc.
 - PENDING: SOAP Sage X3 adapter; real business operations (e.g. technicians from `FSM.XTECHNCN` — currently endpoint expects a
   stored procedure, not a table, so a query-based mapping or a wrapping proc is needed).
 
+### Phase 3.5 (2026-06) — Technician / Lead Technician login foundation (Sage X3 SQL Server)
+- `src/modules/technician-auth/`: `POST /api/auth/technician/login` (public) → Controller → TechnicianAuthService →
+  transaction tracking → SqlServerAdapter (parameterized) → TechnicianIdentityMapper → canonical identity → HS256 token.
+- Verified REAL `FSM.XTECHNCN` columns: `XTECH_0`(id/nvarchar), `XTECHNAM_0`(name), `XLEADTECH_0`(tinyint), `XPASSWRD_0`, `ROWID`.
+  ⚠️ There is NO `XTECHNCN_0` column — so login username column is CONFIG-DRIVEN (`SQL_TECHNICIAN_USERNAME_COLUMN`,
+  default spec value `XTECHNCN_0`; local `.env` set to `XTECH_0`). Live login query validated against the real table (0 rows for bogus user, no passwords fetched).
+- Rule CONFIRMED: `XLEADTECH_0=2` ⇒ Lead Technician else Technician. Both roles get `technician.read` only.
+- Password verification behind `PasswordVerifier` abstraction; TEMPORARY plaintext (constant-time) impl; PENDING WorkSuite PBKDF2-SHA256 (params not guessed).
+- Token minting is a TEMPORARY dev bridge (HS256 via AUTH_DEV_SECRET, dev provider/non-prod only; OIDC/prod → safe INTEGRATION_NOT_CONFIGURED).
+- Safe generic AUTHENTICATION_FAILED (no oracle); password never logged/returned; Sales Rep excluded; no active/inactive column assumed.
+- Config added: `SQL_TECHNICIAN_SCHEMA/TABLE/USERNAME_COLUMN/LOGIN_PROCEDURE`, `AUTH_TOKEN_TTL`. `ConfigModule` now ignores `.env` under NODE_ENV=test (hermetic tests).
+- Tests: 170 unit + 68 e2e all pass (self-tested: build/lint/openapi + real login-query validation). Phases 1–3.4 preserved.
+- PENDING: confirm real login username column (XTECH_0 vs a distinct username); WorkSuite PBKDF2 params; Sales Rep table/login; active/inactive field.
+
 ## Not implemented (by design / stop conditions)
 No business workflows/endpoints; no invented Sage/SQL operations (contracts not provided);
 FSM, FSM Scheduler, WorkSuite, Lead Perfection integrations; OAuth/OIDC provider; RBAC roles;

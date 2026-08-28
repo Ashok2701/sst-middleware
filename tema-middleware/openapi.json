@@ -239,6 +239,58 @@
           "WorkSuite Webhooks"
         ]
       }
+    },
+    "/api/auth/technician/login": {
+      "post": {
+        "operationId": "TechnicianAuthController_login",
+        "summary": "Technician / Lead Technician login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechnicianLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianLoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials (generic authentication failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Login data source or token issuer not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
     }
   },
   "info": {
@@ -568,6 +620,80 @@
           "eventId",
           "event",
           "status"
+        ]
+      },
+      "TechnicianLoginRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "jdoe",
+            "description": "Technician login username (XTECHNCN_0)"
+          },
+          "password": {
+            "type": "string",
+            "description": "Technician password",
+            "format": "password"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ]
+      },
+      "TechnicianIdentityDto": {
+        "type": "object",
+        "properties": {
+          "technicianId": {
+            "type": "string",
+            "example": "TECH001",
+            "description": "X3 technician id (XTECH_0)"
+          },
+          "username": {
+            "type": "string",
+            "example": "jdoe",
+            "description": "Login username (XTECHNCN_0)"
+          },
+          "role": {
+            "type": "string",
+            "example": "Technician",
+            "enum": [
+              "Lead Technician",
+              "Technician"
+            ]
+          }
+        },
+        "required": [
+          "technicianId",
+          "username",
+          "role"
+        ]
+      },
+      "TechnicianLoginResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "Bearer access token (JWT)"
+          },
+          "tokenType": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "expiresIn": {
+            "type": "number",
+            "example": 3600,
+            "description": "Token lifetime in seconds"
+          },
+          "user": {
+            "$ref": "#/components/schemas/TechnicianIdentityDto"
+          }
+        },
+        "required": [
+          "accessToken",
+          "tokenType",
+          "expiresIn",
+          "user"
         ]
       }
     }

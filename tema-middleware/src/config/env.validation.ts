@@ -235,10 +235,32 @@ export class EnvironmentVariables {
   @IsOptional()
   AUTH_CLOCK_TOLERANCE?: number;
 
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  AUTH_TOKEN_TTL?: number;
+
   // ----- Business-API data sources (Phase 3.3) -----
   @IsString()
   @IsOptional()
   SQL_TECHNICIANS_PROCEDURE?: string;
+
+  // ----- Technician login SQL source (Phase 3.5) -----
+  @IsString()
+  @IsOptional()
+  SQL_TECHNICIAN_SCHEMA?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_TECHNICIAN_TABLE?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_TECHNICIAN_USERNAME_COLUMN?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_TECHNICIAN_LOGIN_PROCEDURE?: string;
 
   // ----- WorkSuite integration (Phase 3.4 - all optional / pending) -----
   @IsBooleanString()

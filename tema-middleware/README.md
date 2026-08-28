@@ -364,7 +364,30 @@ Sage X3 to external callers.
 
 ## 13. Current phase
 
-**Phase 3.4 — WorkSuite contractor integration foundation: COMPLETE.**
+**Phase 3.5 — Technician / Lead Technician login foundation (from Sage X3 SQL Server): COMPLETE.**
+
+Individual login for Technicians and Lead Technicians, reading the EXISTING Sage
+X3 / FSM technician table via the SQL Server adapter and issuing a token through
+the existing authentication architecture. Sales Representatives are **excluded**
+(different Sage X3 table, handled later). No shared crew login.
+
+- Endpoint: `POST /api/auth/technician/login` (public) → `{ accessToken, tokenType, expiresIn, user:{ technicianId, username, role } }`. The password is **never** returned/logged.
+- Flow: Controller → `TechnicianAuthService` → integration core (transaction tracking) → SQL Server adapter (parameterized) → mapper → canonical identity → token. Controllers never touch SQL.
+- **Exact X3 columns** (verified against the real `FSM.XTECHNCN` table): `XTECH_0` → `technicianId`, `XLEADTECH_0` → role, `XPASSWRD_0` → password (temporary). **CONFIRMED rule:** `XLEADTECH_0 = 2` ⇒ **Lead Technician**; any other value ⇒ **Technician**.
+- **Login username column is configuration-driven** (`SQL_TECHNICIAN_USERNAME_COLUMN`, default the TEMA-stated `XTECHNCN_0`). ⚠️ The real `FSM.XTECHNCN` table has **no `XTECHNCN_0` column** — its login/id column is `XTECH_0` — so the local config sets `SQL_TECHNICIAN_USERNAME_COLUMN=XTECH_0`. Confirm the intended login username column with TEMA.
+- **Password verification is abstracted** (`PasswordVerifier`). **TEMPORARY** dev implementation = constant-time comparison of the plaintext `XPASSWRD_0`. It is **PENDING** replacement by the confirmed WorkSuite **PBKDF2-SHA256** verifier (exact iterations / salt length / key length / encoding **not yet provided** — not guessed). Swapping the verifier requires no change to the login API, controller, model, role model, SQL integration or auth architecture.
+- **Token issuance is a TEMPORARY dev bridge:** login mints an HS256 JWT (signed with `AUTH_DEV_SECRET`, same iss/aud/`sub`/roles/permissions) accepted by the existing AuthGuard — only when `AUTH_PROVIDER=dev` in non-production. With OIDC/production it returns a safe `INTEGRATION_NOT_CONFIGURED`.
+- **Permissions:** minimal + isolated — both roles get `technician.read` only. **Active/inactive:** no such column confirmed in `XTECHNCN`, so none is assumed (documented limitation).
+- Safe generic `AUTHENTICATION_FAILED` (no username-exists / not-found / wrong-password oracle); SQL failures map to safe integration errors; correlation ids preserved. WorkSuite (Phase 3.4) is unchanged.
+
+Configuration: `SQL_TECHNICIAN_SCHEMA`, `SQL_TECHNICIAN_TABLE`, `SQL_TECHNICIAN_USERNAME_COLUMN`, optional `SQL_TECHNICIAN_LOGIN_PROCEDURE`, `AUTH_TOKEN_TTL` (+ existing `SQL_SERVER_*` / `AUTH_*`).
+
+**Confirmed / Temporary / Pending**
+- CONFIRMED: X3 columns `XTECH_0`/`XLEADTECH_0`/`XPASSWRD_0`; rule `XLEADTECH_0=2 ⇒ Lead Technician`; individual login; Sales Rep excluded; no Branch/Region/crew logic.
+- TEMPORARY: plaintext `XPASSWRD_0` verification; dev HS256 token minting.
+- PENDING: real login username column confirmation (spec said `XTECHNCN_0`, table has `XTECH_0`); WorkSuite PBKDF2-SHA256 parameters/format; active/inactive field; final role→permission mapping.
+
+Previous phase — **Phase 3.4 — WorkSuite contractor integration foundation: COMPLETE.**
 
 Built on the existing Integration Core / Idempotency / Audit / Auth phases:
 

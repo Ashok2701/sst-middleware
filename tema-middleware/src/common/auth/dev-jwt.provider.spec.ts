@@ -15,6 +15,7 @@ function cfg(partial: Partial<AuthConfig> = {}): AuthConfig {
     audience: AUDIENCE,
     devSecret: SECRET,
     clockToleranceSeconds: 5,
+    tokenTtlSeconds: 3600,
     ...partial,
   };
 }
