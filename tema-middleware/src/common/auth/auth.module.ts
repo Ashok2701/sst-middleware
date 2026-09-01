@@ -7,6 +7,7 @@ import { AuthGuard } from './auth.guard';
 import { AuthenticationService } from './authentication.service';
 import { IDENTITY_PROVIDER } from './auth.types';
 import { createIdentityProvider } from './identity-provider.factory';
+import { LocalTokenIssuer } from './local-token.issuer';
 
 /**
  * Authentication foundation. Provides the configured IdentityProvider, the
@@ -27,8 +28,9 @@ import { createIdentityProvider } from './identity-provider.factory';
         ),
     },
     AuthenticationService,
+    LocalTokenIssuer,
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
-  exports: [AuthenticationService, IDENTITY_PROVIDER],
+  exports: [AuthenticationService, IDENTITY_PROVIDER, LocalTokenIssuer],
 })
 export class AuthModule {}

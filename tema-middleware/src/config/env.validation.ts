@@ -262,6 +262,92 @@ export class EnvironmentVariables {
   @IsOptional()
   SQL_TECHNICIAN_LOGIN_PROCEDURE?: string;
 
+  // ----- FSM master-data / integration (Phase 3.6) -----
+  @IsString()
+  @IsOptional()
+  SQL_FSM_SCHEMA?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_SALESREP_USERS_TABLE?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_SALESREP_SITES_TABLE?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_SR_TABLE?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_SR_BASE_TABLE?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_SR_TASK_TABLE?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_SR_JOBCARD_TABLE?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  SQL_SR_MAX_RESULTS?: number;
+
+  @IsString()
+  @IsOptional()
+  SQL_ROUTE_HEADER_TABLE?: string;
+
+  @IsString()
+  @IsOptional()
+  SQL_ROUTE_DETAIL_TABLE?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  SQL_ROUTE_MAX_RESULTS?: number;
+
+  @IsString()
+  @IsOptional()
+  ROUTE_XDRN_PREFIX?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  ROUTE_NEW_STATUS?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  ROUTE_SOURCE_STATUS?: number;
+
+  @IsBooleanString()
+  @IsOptional()
+  LEAD_PERFECTION_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  LEAD_PERFECTION_BASE_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  LEAD_PERFECTION_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  LEAD_PERFECTION_API_KEY_HEADER?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  LEAD_PERFECTION_TIMEOUT?: number;
+
+  @IsString()
+  @IsOptional()
+  LEAD_PERFECTION_HEALTH_PATH?: string;
+
   // ----- WorkSuite integration (Phase 3.4 - all optional / pending) -----
   @IsBooleanString()
   @IsOptional()

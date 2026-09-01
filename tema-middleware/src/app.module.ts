@@ -22,6 +22,9 @@ import { HealthModule } from './health/health.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { TechniciansModule } from './modules/technicians/technicians.module';
 import { TechnicianAuthModule } from './modules/technician-auth/technician-auth.module';
+import { SalesRepAuthModule } from './modules/sales-rep-auth/sales-rep-auth.module';
+import { ServiceRequestsModule } from './modules/service-requests/service-requests.module';
+import { RoutesModule } from './modules/routes/routes.module';
 import { WorksuiteWebhookModule } from './modules/worksuite-webhook/worksuite-webhook.module';
 import { VersionModule } from './version/version.module';
 
@@ -56,6 +59,10 @@ import { VersionModule } from './version/version.module';
     WorksuiteWebhookModule,
     // Phase 3.5 technician / lead-technician login foundation.
     TechnicianAuthModule,
+    // Phase 3.6 FSM master-data & integration foundation.
+    SalesRepAuthModule,
+    ServiceRequestsModule,
+    RoutesModule,
   ],
   providers: [
     // Global, consistent error handling for every route.

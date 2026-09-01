@@ -50,6 +50,8 @@ export interface Contractor {
   role?: ContractorRole;
   /** Active/eligibility status; archived contractors are inactive. */
   active: boolean;
+  /** Country (confirmed values: USA / Canada). */
+  country?: string;
   /** Crew, only when confirmed by the final field specification. */
   crew?: string;
   /** Hashed credential; NEVER exposed via any API. */

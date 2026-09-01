@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
 import { AuthConfig } from '../../config/configuration';
-import { loginNotAvailable } from './technician-auth.errors';
 
 export interface IssueTokenParams {
   subject: string;
@@ -11,18 +10,27 @@ export interface IssueTokenParams {
   permissions: string[];
 }
 
+/** Safe error reused for both technician and sales-rep local login. */
+export function localLoginNotAvailable(): ServiceUnavailableException {
+  return new ServiceUnavailableException({
+    code: 'INTEGRATION_NOT_CONFIGURED',
+    message:
+      'Local login is not available for the current authentication provider',
+  });
+}
+
 /**
- * Mints an HS256 JWT at login that is byte-compatible with the existing
- * verify-only DevJwtProvider (same secret, issuer, audience, `sub`, `roles`,
- * `permissions`, `preferred_username`). The returned token is therefore
- * accepted as-is by the global AuthGuard.
+ * Shared dev-bridge token issuer for local (SQL-backed) logins.
  *
- * TEMPORARY DEV BRIDGE: minting is gated to the `dev` provider in non-production
- * only. With OIDC / in production the real identity provider issues tokens, so
- * this endpoint returns a safe "login not available" error.
+ * Mints an HS256 JWT byte-compatible with the existing verify-only
+ * DevJwtProvider (same secret, issuer, audience, `sub`, `roles`, `permissions`,
+ * `preferred_username`) so the token is accepted by the global AuthGuard.
+ *
+ * TEMPORARY: gated to the `dev` provider in non-production only. With OIDC /
+ * production the real IdP issues tokens, so callers receive a safe error.
  */
 @Injectable()
-export class TechnicianTokenIssuer {
+export class LocalTokenIssuer {
   private readonly cfg: AuthConfig;
   private readonly nodeEnv: string;
 
@@ -43,7 +51,7 @@ export class TechnicianTokenIssuer {
   }
 
   issue(params: IssueTokenParams): { token: string; expiresIn: number } {
-    if (!this.isAvailable()) throw loginNotAvailable();
+    if (!this.isAvailable()) throw localLoginNotAvailable();
     const ttl = this.cfg.tokenTtlSeconds;
     const token = jwt.sign(
       {

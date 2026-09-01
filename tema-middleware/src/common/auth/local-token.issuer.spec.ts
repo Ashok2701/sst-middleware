@@ -1,14 +1,11 @@
 import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
 import { AuthConfig } from '../../config/configuration';
-import { TechnicianTokenIssuer } from './technician-token.issuer';
+import { LocalTokenIssuer } from './local-token.issuer';
 
 const SECRET = 'dev-secret-dev-secret-dev-secret-dev!!';
 
-function issuer(
-  auth: Partial<AuthConfig>,
-  nodeEnv = 'test',
-): TechnicianTokenIssuer {
+function issuer(auth: Partial<AuthConfig>, nodeEnv = 'test'): LocalTokenIssuer {
   const cfg: AuthConfig = {
     enabled: true,
     provider: 'dev',
@@ -22,13 +19,13 @@ function issuer(
   const config = {
     get: (k: string) => (k === 'auth' ? cfg : nodeEnv),
   } as unknown as ConfigService;
-  return new TechnicianTokenIssuer(config);
+  return new LocalTokenIssuer(config);
 }
 
-describe('TechnicianTokenIssuer', () => {
+describe('LocalTokenIssuer', () => {
   it('mints a verifiable HS256 token with sub/roles/permissions/username', () => {
     const { token, expiresIn } = issuer({}).issue({
-      subject: 'TECH001',
+      subject: 'ID1',
       username: 'jdoe',
       roles: ['Technician'],
       permissions: ['technician.read'],
@@ -39,7 +36,7 @@ describe('TechnicianTokenIssuer', () => {
       issuer: 'https://tema.test/',
       audience: 'tema-middleware',
     }) as jwt.JwtPayload;
-    expect(decoded.sub).toBe('TECH001');
+    expect(decoded.sub).toBe('ID1');
     expect(decoded.preferred_username).toBe('jdoe');
     expect(decoded.roles).toEqual(['Technician']);
     expect(decoded.permissions).toEqual(['technician.read']);

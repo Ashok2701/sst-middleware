@@ -35,7 +35,12 @@ describe('Swagger (e2e)', () => {
       expect(res.body.openapi).toMatch(/^3\./);
       const paths = Object.keys(res.body.paths);
       expect(paths.sort()).toEqual([
+        '/api/auth/sales-rep/login',
         '/api/auth/technician/login',
+        '/api/routes',
+        '/api/routes/{xdrn}',
+        '/api/service-requests',
+        '/api/service-requests/{id}',
         '/api/technicians',
         '/api/webhooks/worksuite',
         '/health',

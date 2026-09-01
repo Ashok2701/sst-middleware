@@ -99,6 +99,49 @@ export interface TechnicianAuthConfig {
   loginProcedure?: string;
 }
 
+/** Sales Representative login (Phase 3.6) - XX10CUSERS + XX10CUSERD (sites). */
+export interface SalesRepAuthConfig {
+  schema: string;
+  usersTable: string;
+  sitesTable: string;
+}
+
+/** Lead Perfection adapter (Phase 3.6 foundation - operations PENDING). */
+export interface LeadPerfectionConfig {
+  enabled: boolean;
+  baseUrl?: string;
+  apiKey?: string;
+  apiKeyHeader: string;
+  timeoutMs: number;
+  healthPath: string;
+  retryMaxAttempts: number;
+  retryInitialDelayMs: number;
+}
+
+/** Service Request read source (Phase 3.6) - SERREQUEST + nested detail tables. */
+export interface ServiceRequestsConfig {
+  schema: string;
+  table: string;
+  baseTable: string;
+  taskTable: string;
+  jobCardTable: string;
+  permission: string;
+  maxResults: number;
+}
+
+/** Route read source + XDRN generation (Phase 3.6) - XX1ROUTPOH/XX1ROUTPOD. */
+export interface RoutesConfig {
+  schema: string;
+  headerTable: string;
+  detailTable: string;
+  permission: string;
+  xdrnPrefix: string;
+  newStatus: number;
+  /** Source status constant (e.g. 1524) - configurable, NOT written yet. */
+  sourceStatus: number;
+  maxResults: number;
+}
+
 export interface WorksuiteConfig {
   enabled: boolean;
   baseUrl?: string;
@@ -145,6 +188,10 @@ export interface AppConfig {
   worksuite: WorksuiteConfig;
   technicians: { procedure?: string };
   technicianAuth: TechnicianAuthConfig;
+  salesRepAuth: SalesRepAuthConfig;
+  leadPerfection: LeadPerfectionConfig;
+  serviceRequests: ServiceRequestsConfig;
+  routes: RoutesConfig;
 }
 
 function resolveSwaggerEnabled(nodeEnv: string): boolean {
@@ -283,6 +330,56 @@ export default (): AppConfig => {
       usernameColumn:
         process.env.SQL_TECHNICIAN_USERNAME_COLUMN ?? 'XTECHNCN_0',
       loginProcedure: optStr(process.env.SQL_TECHNICIAN_LOGIN_PROCEDURE),
+    },
+
+    // Sales Representative login (Phase 3.6) - XX10CUSERS (XAUS_0/XPWSD_0/
+    // XACT_0/XUSROLE_0) + XX10CUSERD (XFCY_0/XDEFFCY_0 site assignments).
+    salesRepAuth: {
+      schema: process.env.SQL_FSM_SCHEMA ?? 'dbo',
+      usersTable: process.env.SQL_SALESREP_USERS_TABLE ?? 'XX10CUSERS',
+      sitesTable: process.env.SQL_SALESREP_SITES_TABLE ?? 'XX10CUSERD',
+    },
+
+    // Lead Perfection adapter foundation (Phase 3.6). Config-driven; concrete
+    // operations are PENDING the provided API contract.
+    leadPerfection: {
+      enabled: parseBool(process.env.LEAD_PERFECTION_ENABLED, false),
+      baseUrl: optStr(process.env.LEAD_PERFECTION_BASE_URL),
+      apiKey: optStr(process.env.LEAD_PERFECTION_API_KEY),
+      apiKeyHeader: process.env.LEAD_PERFECTION_API_KEY_HEADER ?? 'x-api-key',
+      timeoutMs: parseIntEnv(process.env.LEAD_PERFECTION_TIMEOUT, 30000),
+      healthPath: process.env.LEAD_PERFECTION_HEALTH_PATH ?? '/',
+      retryMaxAttempts: parseIntEnv(
+        process.env.LEAD_PERFECTION_RETRY_MAX_ATTEMPTS,
+        3,
+      ),
+      retryInitialDelayMs: parseIntEnv(
+        process.env.LEAD_PERFECTION_RETRY_INITIAL_DELAY,
+        200,
+      ),
+    },
+
+    // Service Request read source (Phase 3.6) - read-only, no CRUD.
+    serviceRequests: {
+      schema: process.env.SQL_FSM_SCHEMA ?? 'dbo',
+      table: process.env.SQL_SR_TABLE ?? 'SERREQUEST',
+      baseTable: process.env.SQL_SR_BASE_TABLE ?? 'XFSMBASE',
+      taskTable: process.env.SQL_SR_TASK_TABLE ?? 'HDKTASK',
+      jobCardTable: process.env.SQL_SR_JOBCARD_TABLE ?? 'X1CJOBCARD',
+      permission: process.env.SR_READ_PERMISSION ?? 'serviceRequest.read',
+      maxResults: parseIntEnv(process.env.SQL_SR_MAX_RESULTS, 100),
+    },
+
+    // Route read + XDRN generation (Phase 3.6) - read-only; no INSERTs yet.
+    routes: {
+      schema: process.env.SQL_FSM_SCHEMA ?? 'dbo',
+      headerTable: process.env.SQL_ROUTE_HEADER_TABLE ?? 'XX1ROUTPOH',
+      detailTable: process.env.SQL_ROUTE_DETAIL_TABLE ?? 'XX1ROUTPOD',
+      permission: process.env.ROUTE_READ_PERMISSION ?? 'route.read',
+      xdrnPrefix: process.env.ROUTE_XDRN_PREFIX ?? 'RT',
+      newStatus: parseIntEnv(process.env.ROUTE_NEW_STATUS, 1),
+      sourceStatus: parseIntEnv(process.env.ROUTE_SOURCE_STATUS, 1524),
+      maxResults: parseIntEnv(process.env.SQL_ROUTE_MAX_RESULTS, 100),
     },
   };
 };

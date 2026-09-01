@@ -13,6 +13,7 @@ describe('ContractorMapper', () => {
       role: 'Technician',
       status: 'active',
       crew: 'Crew-7',
+      country: 'US',
     });
     expect(c).toMatchObject({
       worksuiteContractorId: 'ws-100',
@@ -21,9 +22,21 @@ describe('ContractorMapper', () => {
       role: ContractorRole.Technician,
       active: true,
       crew: 'Crew-7',
+      country: 'USA',
     });
     expect(c).not.toHaveProperty('branch');
     expect(c).not.toHaveProperty('region');
+  });
+
+  it('normalizes country to confirmed USA / Canada values', () => {
+    expect(mapper.toCanonical({ id: 'a', country: 'US' }).country).toBe('USA');
+    expect(mapper.toCanonical({ id: 'a', country: 'Canada' }).country).toBe(
+      'Canada',
+    );
+    expect(mapper.toCanonical({ id: 'a', country: 'CA' }).country).toBe(
+      'Canada',
+    );
+    expect(mapper.toCanonical({ id: 'a' }).country).toBeUndefined();
   });
 
   it('accepts only the four confirmed roles; unknown -> undefined', () => {

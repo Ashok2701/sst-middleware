@@ -291,6 +291,290 @@
           "Auth"
         ]
       }
+    },
+    "/api/auth/sales-rep/login": {
+      "post": {
+        "operationId": "SalesRepAuthController_login",
+        "summary": "Sales Representative login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalesRepLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesRepLoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials (generic authentication failure)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Login data source or token issuer not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/service-requests": {
+      "get": {
+        "operationId": "ServiceRequestsController_list",
+        "summary": "List service requests (summary)",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceRequestListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Service Requests"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/service-requests/{id}": {
+      "get": {
+        "operationId": "ServiceRequestsController_getById",
+        "summary": "Get a service request with nested detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceRequestDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Service Requests"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/routes": {
+      "get": {
+        "operationId": "RoutesController_list",
+        "summary": "List route headers",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "site",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Routes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/routes/{xdrn}": {
+      "get": {
+        "operationId": "RoutesController_getByXdrn",
+        "summary": "Get a route header with its detail lines",
+        "parameters": [
+          {
+            "name": "xdrn",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Routes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -694,6 +978,293 @@
           "tokenType",
           "expiresIn",
           "user"
+        ]
+      },
+      "SalesRepLoginRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "SREP01",
+            "description": "Sales Rep login (XAUS_0)"
+          },
+          "password": {
+            "type": "string",
+            "description": "Sales Rep password",
+            "format": "password"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ]
+      },
+      "SalesRepIdentityDto": {
+        "type": "object",
+        "properties": {
+          "salesRepId": {
+            "type": "string",
+            "example": "SREP01"
+          },
+          "username": {
+            "type": "string",
+            "example": "SREP01"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "example": "Sales Rep"
+          },
+          "sites": {
+            "example": [
+              "USA01",
+              "USA02"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultSite": {
+            "type": "string",
+            "example": "USA01"
+          }
+        },
+        "required": [
+          "salesRepId",
+          "username",
+          "role",
+          "sites"
+        ]
+      },
+      "SalesRepLoginResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "tokenType": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "expiresIn": {
+            "type": "number",
+            "example": 3600
+          },
+          "user": {
+            "$ref": "#/components/schemas/SalesRepIdentityDto"
+          }
+        },
+        "required": [
+          "accessToken",
+          "tokenType",
+          "expiresIn",
+          "user"
+        ]
+      },
+      "ServiceRequestSummaryDto": {
+        "type": "object",
+        "properties": {
+          "serviceRequestNumber": {
+            "type": "string",
+            "example": "SRE0000123"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "number"
+          },
+          "serviceDate": {
+            "type": "string"
+          },
+          "createdDate": {
+            "type": "string"
+          },
+          "customer": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "routeNumber": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "serviceRequestNumber"
+        ]
+      },
+      "ServiceRequestListResponse": {
+        "type": "object",
+        "properties": {
+          "serviceRequests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceRequestSummaryDto"
+            }
+          },
+          "count": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "serviceRequests",
+          "count"
+        ]
+      },
+      "ServiceRequestDetailResponse": {
+        "type": "object",
+        "properties": {
+          "serviceRequestNumber": {
+            "type": "string",
+            "example": "SRE0000123"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "number"
+          },
+          "serviceDate": {
+            "type": "string"
+          },
+          "createdDate": {
+            "type": "string"
+          },
+          "customer": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "routeNumber": {
+            "type": "string"
+          },
+          "bases": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "jobCards": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "serviceRequestNumber",
+          "bases",
+          "tasks",
+          "jobCards"
+        ]
+      },
+      "RouteHeaderDto": {
+        "type": "object",
+        "properties": {
+          "xdrn": {
+            "type": "string",
+            "example": "RT-USA01-0001"
+          },
+          "status": {
+            "type": "number",
+            "example": 1
+          },
+          "routeDate": {
+            "type": "string"
+          },
+          "technicianId": {
+            "type": "string"
+          },
+          "technicianName": {
+            "type": "string"
+          },
+          "site": {
+            "type": "string"
+          },
+          "trip": {
+            "type": "number"
+          },
+          "createdBy": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "xdrn"
+        ]
+      },
+      "RouteListResponse": {
+        "type": "object",
+        "properties": {
+          "routes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteHeaderDto"
+            }
+          },
+          "count": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "routes",
+          "count"
+        ]
+      },
+      "RouteDetailResponse": {
+        "type": "object",
+        "properties": {
+          "xdrn": {
+            "type": "string",
+            "example": "RT-USA01-0001"
+          },
+          "status": {
+            "type": "number",
+            "example": 1
+          },
+          "routeDate": {
+            "type": "string"
+          },
+          "technicianId": {
+            "type": "string"
+          },
+          "technicianName": {
+            "type": "string"
+          },
+          "site": {
+            "type": "string"
+          },
+          "trip": {
+            "type": "number"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "xdrn",
+          "details"
         ]
       }
     }

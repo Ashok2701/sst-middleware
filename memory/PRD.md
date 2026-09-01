@@ -108,6 +108,22 @@ integrations adapter strategy doc.
 - Tests: 170 unit + 68 e2e all pass (self-tested: build/lint/openapi + real login-query validation). Phases 1–3.4 preserved.
 - PENDING: confirm real login username column (XTECH_0 vs a distinct username); WorkSuite PBKDF2 params; Sales Rep table/login; active/inactive field.
 
+### Phase 3.6 (2026-06) — FSM master-data & integration foundation
+- Sales Rep login `src/modules/sales-rep-auth/`: `POST /api/auth/sales-rep/login` (public). Verified real cols
+  XX10CUSERS(XAUS_0/XPWSD_0/XAUSNA_0/XEMAILID_0/XACT_0/XUSROLE_0) + XX10CUSERD(XFCY_0/XDEFFCY_0/XLINNO_0). Gate XUSROLE_0=1 && XACT_0=1.
+  Reuses shared LocalTokenIssuer + PasswordVerifier (extracted from 3.5 into common/auth); separate domain model. Permission salesrep.read.
+- Service Requests `src/modules/service-requests/` (read-only, no CRUD, permission serviceRequest.read): middleware JOIN/child
+  queries (no DDL) — SERREQUEST(SRENUM_0) + XFSMBASE(XSERNUM_0) + HDKTASK(SRENUM_0) + X1CJOBCARD(XSRENUM_0), minimal safe fields.
+- Routes `src/modules/routes/` (read-only, permission route.read): XX1ROUTPOH header + XX1ROUTPOD detail list. Pure tested XDRN
+  generator RT-{SITE}-{0001}; NOT persisted. New route status XROUTSTATUS_0=1. 1524 kept as configurable constant, written nowhere.
+- Lead Perfection adapter foundation `src/integrations/lead-perfection/` (config base URL/api-key/timeout/auth/connectivity/safe errors;
+  operations PENDING). Registered in IntegrationRegistry → /health/integrations now lists sql-server, sage-x3, worksuite, lead-perfection.
+- WorkSuite: added confirmed Country (USA/Canada) to canonical contractor + mapper. 3.4 webhook/HMAC/idempotency/PBKDF2 abstraction intact.
+- Consolidated dev token issuer: TechnicianTokenIssuer → shared common/auth/LocalTokenIssuer (exported by global AuthModule). ConfigModule already ignores .env under NODE_ENV=test.
+- All new SQL validated against LIVE FSM schema (bogus keys / TOP 1; no passwords fetched). Ops helper scripts under scripts/.
+- Tests: 194 unit + 79 e2e all pass; build + lint + openapi pass. Phases 1–3.5 preserved.
+- PENDING: 1524 status meaning/field; Lead Perfection API contract + credentials; WorkSuite PBKDF2 params; route persistence via Sage document engine; Sales Rep XDEFFCY_0 default-flag value confirmation.
+
 ## Not implemented (by design / stop conditions)
 No business workflows/endpoints; no invented Sage/SQL operations (contracts not provided);
 FSM, FSM Scheduler, WorkSuite, Lead Perfection integrations; OAuth/OIDC provider; RBAC roles;

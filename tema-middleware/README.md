@@ -364,7 +364,42 @@ Sage X3 to external callers.
 
 ## 13. Current phase
 
-**Phase 3.5 — Technician / Lead Technician login foundation (from Sage X3 SQL Server): COMPLETE.**
+**Phase 3.6 — FSM master-data & integration foundation: COMPLETE.**
+
+Adds read access to FSM master data + Sales Rep login + a Lead Perfection adapter
+foundation, all on the existing modular architecture. Phases 1–3.5 preserved.
+
+- **Sales Representative login** — `POST /api/auth/sales-rep/login` (public). Reads Sage X3
+  `XX10CUSERS` (exact columns `XAUS_0` username, `XPWSD_0` password, `XACT_0` active, `XUSROLE_0` role)
+  + `XX10CUSERD` site assignments (`XFCY_0`, default `XDEFFCY_0`). Gate: `XUSROLE_0=1` AND `XACT_0=1`.
+  Same secure architecture as technician login (parameterized SQL, transaction tracking, shared
+  `PasswordVerifier` + `LocalTokenIssuer`) but a **separate** identity/domain model. Permission `salesrep.read`.
+- **Service Requests (read-only, no CRUD)** — `GET /api/service-requests`, `GET /api/service-requests/:id`
+  (permission `serviceRequest.read`). Composed via parameterized **middleware JOIN/child queries** (no DB DDL/views):
+  header `SERREQUEST` (`SRENUM_0`) with nested `XFSMBASE` (`XSERNUM_0`), `HDKTASK` (`SRENUM_0`),
+  `X1CJOBCARD` (`XSRENUM_0`). Minimal safe field subset only.
+- **Routes (read-only)** — `GET /api/routes`, `GET /api/routes/:xdrn` (permission `route.read`): header
+  `XX1ROUTPOH` + detail list `XX1ROUTPOD`. Pure **XDRN generator** `RT-{SITE}-{0001}` (tested; **NOT** persisted —
+  no INSERTs into Sage tables). New routes use `XROUTSTATUS_0 = 1`. The `1524` status is a **configurable constant,
+  written nowhere** pending confirmation of its Sage meaning.
+- **WorkSuite** (Phase 3.4 continued): added the confirmed **Country** (USA/Canada) field to the canonical
+  contractor + mapper. Webhook + Partner-API pull + HMAC + Event-Id idempotency + PBKDF2 abstraction all intact
+  (PBKDF2 params still PENDING — not guessed).
+- **Lead Perfection adapter foundation** — config-driven base URL + API-key header + timeout + connectivity
+  health + safe error mapping. Concrete operations are **PENDING** the API contract (none invented). Now reported by
+  `/health/integrations` alongside sql-server, sage-x3, worksuite.
+- Security: parameterized SQL only (identifiers validated), constant-time credential/signature comparison,
+  generic auth failures, correlation ids preserved, no passwords/keys/hashes/SQL/connection strings in logs or responses.
+
+All new SQL was validated against the LIVE FSM schema (bogus keys / TOP 1 — no passwords fetched). Config keys:
+`SQL_FSM_SCHEMA`, `SQL_SALESREP_*`, `SQL_SR_*`, `SQL_ROUTE_*`, `ROUTE_*`, `LEAD_PERFECTION_*` (see `.env.example`).
+
+**Confirmed / Temporary / Pending (3.6)**
+- CONFIRMED: Sales Rep columns + gate; SR/route link keys; XDRN format; new route status 1; WorkSuite Country.
+- TEMPORARY: plaintext `XPWSD_0`/`XPASSWRD_0` verification; dev HS256 token minting.
+- PENDING: `1524` status meaning/field; Lead Perfection API contract/creds; WorkSuite PBKDF2 params; route persistence (Sage document engine).
+
+Previous phase — **Phase 3.5 — Technician / Lead Technician login foundation (from Sage X3 SQL Server): COMPLETE.**
 
 Individual login for Technicians and Lead Technicians, reading the EXISTING Sage
 X3 / FSM technician table via the SQL Server adapter and issuing a token through

@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { authenticationFailed } from '../../common/auth/auth.errors';
+import { LocalTokenIssuer } from '../../common/auth/local-token.issuer';
 import { getCorrelationId } from '../../common/correlation/correlation.context';
 import { TransactionTrackerService } from '../../common/integration/transaction/transaction-tracker.service';
 import {
@@ -22,7 +23,6 @@ import {
   loginNotAvailable,
   loginSourceNotConfigured,
 } from './technician-auth.errors';
-import { TechnicianTokenIssuer } from './technician-token.issuer';
 
 const SAFE_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
@@ -45,7 +45,7 @@ export class TechnicianAuthService {
     private readonly config: ConfigService,
     private readonly tracker: TransactionTrackerService,
     private readonly mapper: TechnicianIdentityMapper,
-    private readonly tokenIssuer: TechnicianTokenIssuer,
+    private readonly tokenIssuer: LocalTokenIssuer,
     @Inject(TECHNICIAN_PASSWORD_VERIFIER)
     private readonly verifier: PasswordVerifier,
   ) {}

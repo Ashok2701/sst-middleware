@@ -77,10 +77,23 @@ export class ContractorMapper {
       active: this.mapActive(
         firstDefined(payload, ['active', 'status', 'eligibility']),
       ),
+      country: this.mapCountry(
+        firstDefined(payload, ['country', 'countryCode']),
+      ),
       crew: toStr(firstDefined(payload, ['crew'])),
       credential: this.mapCredential(payload),
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  /** Normalizes country to the confirmed USA / Canada values where recognisable. */
+  private mapCountry(value: unknown): string | undefined {
+    const s = toStr(value);
+    if (!s) return undefined;
+    const u = s.toUpperCase();
+    if (['USA', 'US', 'UNITED STATES'].includes(u)) return 'USA';
+    if (['CANADA', 'CA', 'CAN'].includes(u)) return 'Canada';
+    return s;
   }
 
   /** Only the four confirmed role values are accepted; anything else -> undefined. */
