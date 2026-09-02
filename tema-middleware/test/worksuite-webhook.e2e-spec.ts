@@ -140,6 +140,18 @@ describe('POST /api/webhooks/worksuite (e2e)', () => {
     expect(getContractor).not.toHaveBeenCalled();
   });
 
+  it('safely rejects a malformed (non-JSON) payload with a 400 (no sync, no leak)', async () => {
+    const body = 'not-json{';
+    const t = ts();
+    // Malformed JSON is rejected safely at the HTTP boundary with a generic
+    // 400 before any contractor sync; the unit test covers the service-level
+    // WEBHOOK_INVALID_PAYLOAD path directly with a raw buffer.
+    const res = await post(body, t, sign(body, t), 'evt-malformed').expect(400);
+    expect(getContractor).not.toHaveBeenCalled();
+    expect(JSON.stringify(res.body)).not.toContain(SECRET);
+    expect(res.body).not.toHaveProperty('stack');
+  });
+
   it('never leaks the webhook secret in an error response', async () => {
     const body = '{"event":"contractor.updated","contractorId":"c1"}';
     const res = await post(

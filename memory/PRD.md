@@ -124,6 +124,15 @@ integrations adapter strategy doc.
 - Tests: 194 unit + 79 e2e all pass; build + lint + openapi pass. Phases 1–3.5 preserved.
 - PENDING: 1524 status meaning/field; Lead Perfection API contract + credentials; WorkSuite PBKDF2 params; route persistence via Sage document engine; Sales Rep XDEFFCY_0 default-flag value confirmation.
 
+### Phase 3.7 (2026-06) — Integration MVP: complete & verify (login + webhooks + core read APIs)
+- Scope was already delivered structurally in 3.6; this phase was a focused COMPLETE-&-VERIFY pass (no behavior changes).
+- Sales Rep login verified end-to-end: gate XUSROLE_0=1 && XACT_0=1, XX10CUSERS/XX10CUSERD, shared PasswordVerifier + LocalTokenIssuer, token + /me, permission salesrep.read. Added e2e for inactive user + wrong password (generic 401).
+- WorkSuite webhook flow verified: HMAC (constant-time) + timestamp freshness + Event-Id idempotency + safe errors. Added unit test for WEBHOOK_INVALID_PAYLOAD (raw-buffer path) and an e2e proving malformed JSON is safely rejected with a generic 400 at the HTTP boundary (no sync, no secret/stack leak).
+- Service Requests read-only (GET /api/service-requests, /:id) + Routes read-only (GET /api/routes, /:xdrn) verified; added e2e for route 404 + 401. XDRN generator RT-{SITE}-{0001}, newStatus=1, 1524 kept as unused config constant. No DDL, parameterized SQL only.
+- Lead Perfection remains config-driven foundation (ops PENDING); /health/integrations lists sql-server/sage-x3/worksuite/lead-perfection.
+- Live FSM DB re-validated (read-only, bogus keys / TOP 1): connectivity OK (XTECHNCN 29 rows), sales-rep + SR (header real row) + routes (header real row) queries all valid; no passwords fetched; no writes/DDL (scripts/check-sql.js, scripts/check-phase36-queries.js).
+- Tests: 195 unit + 84 e2e all pass; build + lint + openapi pass. Phases 1–3.6 preserved.
+
 ## Not implemented (by design / stop conditions)
 No business workflows/endpoints; no invented Sage/SQL operations (contracts not provided);
 FSM, FSM Scheduler, WorkSuite, Lead Perfection integrations; OAuth/OIDC provider; RBAC roles;

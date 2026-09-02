@@ -107,6 +107,22 @@ describe('POST /api/auth/sales-rep/login (e2e)', () => {
     await login('nobody', 'pw').expect(401);
   });
 
+  it('rejects an inactive sales rep with a generic 401', async () => {
+    query.mockResolvedValue([
+      { XAUS_0: 'S1', XPWSD_0: 'pw', XUSROLE_0: 1, XACT_0: 2 },
+    ]);
+    const res = await login('S1', 'pw').expect(401);
+    expect(res.body.code).toBe('AUTHENTICATION_FAILED');
+  });
+
+  it('rejects a wrong password with the same generic 401', async () => {
+    query.mockResolvedValue([
+      { XAUS_0: 'S1', XPWSD_0: 'right', XUSROLE_0: 1, XACT_0: 1 },
+    ]);
+    const res = await login('S1', 'wrong').expect(401);
+    expect(res.body.code).toBe('AUTHENTICATION_FAILED');
+  });
+
   it('validates the body (missing password -> 400)', async () => {
     await request(app.getHttpServer())
       .post('/api/auth/sales-rep/login')

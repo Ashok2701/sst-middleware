@@ -150,6 +150,19 @@ describe('FSM read APIs - Service Requests & Routes (e2e)', () => {
     expect(detail.body.details[0].customerName).toBe('Acme');
   });
 
+  it('404s a missing route (route.read)', async () => {
+    query.mockResolvedValueOnce([]);
+    const res = await request(app.getHttpServer())
+      .get('/api/routes/RT-NOPE-9999')
+      .set('Authorization', routeToken)
+      .expect(404);
+    expect(res.body.code).toBe('NOT_FOUND');
+  });
+
+  it('requires authentication for routes (401)', async () => {
+    await request(app.getHttpServer()).get('/api/routes').expect(401);
+  });
+
   it('forbids routes without route.read (403)', async () => {
     await request(app.getHttpServer())
       .get('/api/routes')

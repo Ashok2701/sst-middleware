@@ -174,4 +174,21 @@ describe('WorksuiteWebhookService', () => {
     expect(res.status).toBe('ignored');
     expect(contractors.syncFromWorksuite).not.toHaveBeenCalled();
   });
+
+  it('rejects a malformed (non-JSON) payload after a valid signature', async () => {
+    const { service, contractors, audit } = build(cfg());
+    const raw = Buffer.from('not-json{');
+    await expect(
+      service.handle(raw, headers(raw, 'evt-bad-json')),
+    ).rejects.toMatchObject({
+      response: { code: 'WEBHOOK_INVALID_PAYLOAD' },
+    });
+    expect(contractors.syncFromWorksuite).not.toHaveBeenCalled();
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'WORKSUITE_WEBHOOK_REJECTED',
+        metadata: expect.objectContaining({ reason: 'invalid_payload' }),
+      }),
+    );
+  });
 });
