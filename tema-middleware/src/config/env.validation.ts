@@ -409,6 +409,39 @@ export class EnvironmentVariables {
   @IsOptional()
   WORKSUITE_WEBHOOK_TOLERANCE_SECONDS?: number;
 
+  // Phase 3.8: pluggable webhook auth mode + config-driven event aliases.
+  @IsString()
+  @IsOptional()
+  WORKSUITE_WEBHOOK_AUTH_MODE?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_EVENT_CONTRACTOR_CREATED?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_EVENT_CONTRACTOR_UPDATED?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_EVENT_CONTRACTOR_STATUS?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_EVENT_PROFILE_UPDATED?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_EVENT_COMPANY_UPDATED?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_EVENT_CONTRACTOR_ARCHIVED?: string;
+
+  @IsString()
+  @IsOptional()
+  WORKSUITE_EVENT_CONTRACTOR_REACTIVATED?: string;
+
   @IsString()
   @IsOptional()
   WORKSUITE_PASSWORD_ALGORITHM?: string;

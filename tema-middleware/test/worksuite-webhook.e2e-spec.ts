@@ -133,6 +133,69 @@ describe('POST /api/webhooks/worksuite (e2e)', () => {
     expect(getContractor).toHaveBeenCalledTimes(1);
   });
 
+  // ----- Phase 3.8: partnerId + the five logical events + API failure -----
+
+  it('accepts a partnerId created payload and syncs that contractor', async () => {
+    getContractor.mockResolvedValue({ id: '1405', role: 'Technician' });
+    const body = '{"event":"CONTRACTOR_CREATED","partnerId":"1405"}';
+    const t = ts();
+    const res = await post(body, t, sign(body, t), 'evt-3.8-created').expect(
+      200,
+    );
+    expect(res.body).toMatchObject({ accepted: true, status: 'processed' });
+    expect(getContractor).toHaveBeenCalledWith('1405');
+  });
+
+  it('processes a profile.updated event (fetch latest)', async () => {
+    getContractor.mockResolvedValue({ id: 'c-prof', role: 'Technician' });
+    const body = '{"event":"profile.updated","partnerId":"c-prof"}';
+    const t = ts();
+    const res = await post(body, t, sign(body, t), 'evt-3.8-profile').expect(
+      200,
+    );
+    expect(res.body.status).toBe('processed');
+    expect(getContractor).toHaveBeenCalledWith('c-prof');
+  });
+
+  it('processes an activate/deactivate (status) event (fetch latest)', async () => {
+    getContractor.mockResolvedValue({ id: 'c-stat', status: 'inactive' });
+    const body = '{"event":"contractor.deactivated","partnerId":"c-stat"}';
+    const t = ts();
+    const res = await post(body, t, sign(body, t), 'evt-3.8-status').expect(
+      200,
+    );
+    expect(res.body.status).toBe('processed');
+    expect(getContractor).toHaveBeenCalledWith('c-stat');
+  });
+
+  it('company.updated WITH partnerId syncs; WITHOUT partnerId safely ignores (TBD)', async () => {
+    getContractor.mockResolvedValue({ id: 'c-comp', role: 'Technician' });
+    const withId = '{"event":"company.updated","partnerId":"c-comp"}';
+    let t = ts();
+    const r1 = await post(withId, t, sign(withId, t), 'evt-3.8-comp1').expect(
+      200,
+    );
+    expect(r1.body.status).toBe('processed');
+    expect(getContractor).toHaveBeenCalledWith('c-comp');
+
+    getContractor.mockClear();
+    const noId = '{"event":"company.updated"}';
+    t = ts();
+    const r2 = await post(noId, t, sign(noId, t), 'evt-3.8-comp2').expect(200);
+    expect(r2.body.status).toBe('ignored');
+    expect(getContractor).not.toHaveBeenCalled();
+  });
+
+  it('safely surfaces a WorkSuite Partner API failure without leaking detail', async () => {
+    getContractor.mockRejectedValue(new Error('worksuite upstream 500'));
+    const body = '{"event":"contractor.created","partnerId":"c-fail"}';
+    const t = ts();
+    const res = await post(body, t, sign(body, t), 'evt-3.8-apifail');
+    expect(res.status).toBeGreaterThanOrEqual(500);
+    expect(JSON.stringify(res.body)).not.toContain(SECRET);
+    expect(res.body).not.toHaveProperty('stack');
+  });
+
   it('archived event disables access without pulling the record', async () => {
     const body = '{"event":"contractor.archived","contractorId":"c3"}';
     const t = ts();

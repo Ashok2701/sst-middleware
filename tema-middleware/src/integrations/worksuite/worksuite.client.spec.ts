@@ -26,7 +26,12 @@ function makeClient(
     healthPath: '/',
     retryMaxAttempts: 3,
     retryInitialDelayMs: 0,
-    webhook: { enabled: false, toleranceSeconds: 300 },
+    webhook: {
+      enabled: false,
+      toleranceSeconds: 300,
+      authMode: 'hmac-sha256',
+      eventAliases: {},
+    },
     password: { algorithm: 'PBKDF2-SHA256' },
     ...partial,
   };

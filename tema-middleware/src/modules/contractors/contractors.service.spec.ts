@@ -89,4 +89,55 @@ describe('ContractorsService', () => {
     expect(ok).toBe(true);
     expect(verifier.verify).toHaveBeenCalledWith('pw', expect.any(Object));
   });
+
+  // ----- Phase 3.8: status change + profile merge -----
+
+  it('applyStatusChange pulls the latest record and applies its status', async () => {
+    getContractor.mockResolvedValue({ id: 'ws-5', status: 'inactive' });
+    const c = await service.applyStatusChange(
+      'ws-5',
+      'WORKSUITE_CONTRACTOR_STATUS_CHANGED',
+    );
+    expect(getContractor).toHaveBeenCalledWith('ws-5');
+    expect(c.active).toBe(false);
+    expect(auditRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'WORKSUITE_CONTRACTOR_STATUS_CHANGED',
+      }),
+    );
+  });
+
+  it('applyProfileUpdate merges and preserves unrelated fields + status', async () => {
+    // Seed an INACTIVE contractor with a country + credential.
+    getContractor.mockResolvedValue({
+      id: 'ws-6',
+      role: 'Technician',
+      country: 'USA',
+      status: 'inactive',
+      passwordHash: 'HASH',
+    });
+    await service.syncFromWorksuite('ws-6', 'WORKSUITE_CONTRACTOR_CREATED');
+
+    // Profile update supplies ONLY a crew; country/credential/status preserved.
+    getContractor.mockResolvedValue({ id: 'ws-6', crew: 'CREW-A' });
+    const c = await service.applyProfileUpdate(
+      'ws-6',
+      'WORKSUITE_CONTRACTOR_PROFILE_UPDATED',
+    );
+    expect(c.crew).toBe('CREW-A');
+    expect(c.country).toBe('USA');
+    expect(c.role).toBe(ContractorRole.Technician);
+    expect(c.credential).toBeDefined();
+    expect(c.active).toBe(false); // status preserved (not reset to default-active)
+  });
+
+  it('applyProfileUpdate creates the contractor when it does not exist locally', async () => {
+    getContractor.mockResolvedValue({ id: 'ws-7', role: 'Technician' });
+    const c = await service.applyProfileUpdate(
+      'ws-7',
+      'WORKSUITE_CONTRACTOR_PROFILE_UPDATED',
+    );
+    expect(c.worksuiteContractorId).toBe('ws-7');
+    expect(await store.findById('ws-7')).toBeDefined();
+  });
 });

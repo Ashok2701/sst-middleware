@@ -68,6 +68,56 @@ export class ContractorsService {
     return saved;
   }
 
+  /**
+   * Activation / deactivation (Phase 3.8): fetch the latest record and apply
+   * WorkSuite's current status via the standard fetch-map-upsert. Status values
+   * are NOT invented here - the mapper owns the (configurable) status mapping.
+   */
+  async applyStatusChange(
+    contractorId: string,
+    action: string,
+  ): Promise<Contractor> {
+    return this.syncFromWorksuite(contractorId, action);
+  }
+
+  /**
+   * Profile update (Phase 3.8): fetch the latest record and merge onto the
+   * existing contractor, PRESERVING fields the source did not supply. A profile
+   * update never changes activation status (that is a status-change event), and
+   * empty/undefined incoming values do not clear existing values.
+   */
+  async applyProfileUpdate(
+    contractorId: string,
+    action: string,
+  ): Promise<Contractor> {
+    const payload = (await this.adapter.getContractor(
+      contractorId,
+    )) as WorksuiteContractorPayload;
+    const incoming = this.mapper.toCanonical(payload, contractorId);
+    const existing = await this.store.findById(contractorId);
+    const merged = existing ? mergeContractor(existing, incoming) : incoming;
+
+    const saved = await this.store.upsert(merged);
+    await this.audit.record({
+      action,
+      outcome: AuditOutcome.Success,
+      entityType: 'Contractor',
+      entityId: saved.worksuiteContractorId,
+      sourceSystem: 'WorkSuite',
+      targetSystem: 'TEMA',
+      metadata: {
+        role: saved.role,
+        active: saved.active,
+        created: !existing,
+        hasCredential: Boolean(saved.credential),
+      },
+    });
+    this.logger.log(
+      `Contractor profile updated action=${action} id=${saved.worksuiteContractorId} created=${!existing}`,
+    );
+    return saved;
+  }
+
   /** Archive -> disable TEMA FSM access. */
   async archive(contractorId: string, action: string): Promise<void> {
     await this.store.setActive(contractorId, false);
@@ -94,4 +144,27 @@ export class ContractorsService {
   ): Promise<boolean> {
     return this.passwordVerifier.verify(plaintext, credential);
   }
+}
+
+/**
+ * Merges an incoming (freshly-fetched) contractor onto the existing record for
+ * a PROFILE update: incoming values win only when present; empty/undefined
+ * incoming values preserve the existing value; activation status is preserved
+ * (changed only by status-change events).
+ */
+function mergeContractor(
+  existing: Contractor,
+  incoming: Contractor,
+): Contractor {
+  return {
+    worksuiteContractorId: incoming.worksuiteContractorId,
+    partnerId: incoming.partnerId ?? existing.partnerId,
+    companyId: incoming.companyId ?? existing.companyId,
+    role: incoming.role ?? existing.role,
+    active: existing.active,
+    country: incoming.country ?? existing.country,
+    crew: incoming.crew ?? existing.crew,
+    credential: incoming.credential ?? existing.credential,
+    updatedAt: incoming.updatedAt,
+  };
 }

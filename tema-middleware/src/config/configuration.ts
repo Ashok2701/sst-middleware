@@ -2,6 +2,10 @@
  * Central, typed configuration loaded from environment variables.
  * No secrets or real URLs live here - only how env vars map to config keys.
  */
+import {
+  buildEventAliases,
+  WorksuiteLogicalEvent,
+} from '../modules/worksuite-webhook/worksuite-events';
 
 function parseBool(value: string | undefined, fallback = false): boolean {
   if (value === undefined) return fallback;
@@ -161,6 +165,10 @@ export interface WorksuiteConfig {
     /** HMAC shared secret. PENDING (never committed). */
     secret?: string;
     toleranceSeconds: number;
+    /** Pluggable auth mechanism selector. TEMPORARY default: hmac-sha256. */
+    authMode: string;
+    /** Raw WorkSuite event string -> internal logical event. Config-driven. */
+    eventAliases: Record<string, WorksuiteLogicalEvent>;
   };
   password: {
     /** Proposed: PBKDF2-SHA256. */
@@ -305,6 +313,8 @@ export default (): AppConfig => {
           process.env.WORKSUITE_WEBHOOK_TOLERANCE_SECONDS,
           300,
         ),
+        authMode: process.env.WORKSUITE_WEBHOOK_AUTH_MODE ?? 'hmac-sha256',
+        eventAliases: buildEventAliases(process.env),
       },
       password: {
         algorithm: process.env.WORKSUITE_PASSWORD_ALGORITHM ?? 'PBKDF2-SHA256',

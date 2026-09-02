@@ -133,6 +133,15 @@ integrations adapter strategy doc.
 - Live FSM DB re-validated (read-only, bogus keys / TOP 1): connectivity OK (XTECHNCN 29 rows), sales-rep + SR (header real row) + routes (header real row) queries all valid; no passwords fetched; no writes/DDL (scripts/check-sql.js, scripts/check-phase36-queries.js).
 - Tests: 195 unit + 84 e2e all pass; build + lint + openapi pass. Phases 1–3.6 preserved.
 
+### Phase 3.8 (2026-06) — WorkSuite webhook receiver completion (5 logical events)
+- Completed the WorkSuite → TEMA notification-and-pull receiver for all five known logical events, EXTENDING (not rebuilding) the Phase 3.4-3.7 webhook. No push back to WorkSuite.
+- Config-driven event vocabulary: new `WorksuiteLogicalEvent` + `buildEventAliases`/`resolveLogicalEvent` (`worksuite-events.ts`). Raw WorkSuite event strings resolve case-insensitively via an alias map; `WORKSUITE_EVENT_*` env vars ADD to built-in defaults (which keep the legacy `contractor.*` strings) so the final WorkSuite strings plug in without code changes. Exact strings/casing remain PENDING.
+- `partnerId` extracted from the payload (then legacy `contractorId`/`id`), mapped internally to `contractorId`; WorkSuite's field never renamed/rejected; no numeric/casing assumptions.
+- Clean dispatcher: `WorksuiteWebhookService.process` now dispatches via a per-logical-event handler map (no inline business logic). Handlers: Created/Updated → `syncFromWorksuite`; Activated/Deactivated → new `ContractorsService.applyStatusChange` (fetch latest → apply WorkSuite status via mapper, no invented values); Profile Updated → new `applyProfileUpdate` (fetch latest → MERGE preserving unsupplied fields AND activation status); Company Updated → syncs when `partnerId` present else safe TBD ack (`company_relationship_tbd`); legacy Archived/Reactivated behavior preserved exactly.
+- Pluggable auth: new `WebhookAuthenticator` abstraction + `HmacWebhookAuthenticator` (TEMPORARY) selected by `WORKSUITE_WEBHOOK_AUTH_MODE` (default `hmac-sha256`). Constant-time comparison, secret-not-configured → 503, bad signature → 401 preserved. Final WorkSuite auth contract still PENDING.
+- Idempotency (Event-Id), audit (safe metadata only), correlation IDs, safe error model all reused unchanged. No Sage writes/DDL. Contractor persistence stays the pluggable in-memory store (upsert/merge) — durable datastore still a future decision.
+- Tests: 216 unit + 89 e2e all pass (added: event resolver, authenticator, all 5 event handlers, partnerId/missing-partnerId, profile-merge preservation, status change, company-TBD, WorkSuite API failure, malformed/no-leak). build + lint + openapi pass. Phases 1-3.7 preserved.
+
 ## Not implemented (by design / stop conditions)
 No business workflows/endpoints; no invented Sage/SQL operations (contracts not provided);
 FSM, FSM Scheduler, WorkSuite, Lead Perfection integrations; OAuth/OIDC provider; RBAC roles;

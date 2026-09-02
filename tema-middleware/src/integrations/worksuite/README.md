@@ -1,13 +1,18 @@
-# WorkSuite Contractor Integration (Phase 3.4 foundation)
+# WorkSuite Contractor Integration (Phase 3.4 foundation → Phase 3.8 receiver)
 
-This document describes the WorkSuite contractor integration **foundation**. It
-is built on the existing Integration Core, Idempotency, Audit, Auth and
+This document describes the WorkSuite contractor integration. The webhook
+**receiver** was completed in **Phase 3.8** for all five known logical events;
+it builds on the existing Integration Core, Idempotency, Audit, Auth and
 Authorization phases and is designed so the final, still-pending WorkSuite
 specifications can be plugged in **without architectural changes**.
 
 > WorkSuite is **NOT** an identity provider. It is the source of truth for
 > contractor records and hashed credentials. TEMA is **notified** by webhook and
 > then **pulls** the current contractor record via the WorkSuite Partner API.
+> There is **no** business-data push from TEMA back to WorkSuite.
+>
+> WorkSuite calls the contractor identifier **`partnerId`**; internally TEMA maps
+> it to `contractorId`. The incoming `partnerId` field is never renamed/rejected.
 
 ---
 
@@ -81,13 +86,32 @@ HMAC signature, not a TEMA token. Steps:
 8. map to the canonical contractor and upsert; archived → disable access;
 9. audit the outcome; return a safe `{ accepted, eventId, event, status }`.
 
-Confirmed events (no separate password-reset/role-change events — they arrive as
-`contractor.updated`, and TEMA re-pulls the record):
+Confirmed logical events (Phase 3.8). Raw WorkSuite event strings are resolved
+to these internal logical events through a **config-driven, case-insensitive
+alias map** (`WORKSUITE_EVENT_*`), because the final WorkSuite event strings and
+JSON casing are **PENDING**. Defaults include the legacy `contractor.*` strings.
 
-- `contractor.created`
-- `contractor.updated`
-- `contractor.archived`
-- `contractor.reactivated`
+| Logical event | Default aliases | TEMA action |
+| --- | --- | --- |
+| Contractor Created | `contractor.created` | pull → map → upsert |
+| Contractor Updated | `contractor.updated` | pull → map → upsert (create if missing) |
+| Activated/Deactivated | `contractor.activated` / `contractor.deactivated` | pull latest → apply WorkSuite status |
+| Profile Updated | `profile.updated` | pull latest → **merge** (preserve unsupplied fields + status) |
+| Company Updated | `company.updated` | if `partnerId` present → sync that contractor; else safe TBD ack |
+| Archived *(legacy)* | `contractor.archived` | disable access; **no** Partner pull |
+| Reactivated *(legacy)* | `contractor.reactivated` | pull → upsert with `active=true` |
+
+Password reset / role change are **not** separate events — they arrive as
+`contractor.updated` and TEMA re-pulls the record.
+
+### Pluggable webhook authentication (Phase 3.8)
+
+The webhook authenticator is selected by `WORKSUITE_WEBHOOK_AUTH_MODE` (default
+`hmac-sha256`) behind a `WebhookAuthenticator` abstraction. The HMAC verifier is
+**TEMPORARY** — the final WorkSuite webhook authentication contract (algorithm,
+headers, secret/timestamp format, replay window) is **PENDING** and can be
+plugged in without touching the orchestration. Constant-time comparison and
+no-secret-leakage are preserved regardless of mode.
 
 ## 3. HMAC verification
 
@@ -250,13 +274,18 @@ verification (with pending parameters explicitly tested).
 
 **Confirmed**
 - WorkSuite is **not** an IdP; Partner API used to retrieve contractor records.
-- Notification-and-pull webhook model.
-- Events: created / updated / archived / reactivated (no separate reset/role events).
+- Notification-and-pull webhook model; no push from TEMA back to WorkSuite.
+- WorkSuite identifier is `partnerId` (mapped internally to `contractorId`).
+- Five logical events: Created, Updated, Activated/Deactivated, Profile Updated,
+  Company Updated (+ legacy Archived / Reactivated preserved unchanged).
 - PBKDF2-SHA256 proposed for credentials; HMAC-SHA256 proposed for webhook signing.
 - Four role values; one role per contractor; role can change.
 - No Branch / Region.
 
 **Pending (not invented)**
+- Exact WorkSuite event strings, webhook JSON schema and casing (config-driven aliases ready).
+- Final webhook authentication/signature contract (pluggable authenticator; HMAC is TEMPORARY).
+- Company Updated → contractor relationship semantics (single `partnerId` handled; fan-out TBD).
 - Exact PBKDF2 parameters + stored-hash format / password normalization.
 - Exact contractor field list (and crew structure if required).
 - Exact Partner API authentication details/credentials and the contractor path.
