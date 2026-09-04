@@ -21,7 +21,7 @@ export const SALES_REP_ACTIVE_INDICATOR = 1;
 export const SALES_REP_DEFAULT_SITE_FLAG = 2;
 
 export const SALES_REP_ROLE = 'Sales Rep';
-export const SALES_REP_PERMISSIONS: readonly string[] = ['salesrep.read'];
+export const SALES_REP_PERMISSIONS: readonly string[] = ['salesrep.read', 'company.read', 'serviceRequest.read'];
 
 export interface SalesRepUserRow {
   XAUS_0?: unknown;
