@@ -83,6 +83,14 @@ export class EnvironmentVariables {
   @IsOptional()
   SWAGGER_ENABLED?: string;
 
+  @IsBooleanString()
+  @IsOptional()
+  CORS_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  CORS_ORIGINS?: string;
+
   // ----- SQL Server integration (all optional) -----
   @IsBooleanString()
   @IsOptional()

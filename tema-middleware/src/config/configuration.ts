@@ -189,6 +189,7 @@ export interface AppConfig {
   databaseUrl?: string;
   logLevel: string;
   swaggerEnabled: boolean;
+  cors: { enabled: boolean; origins: string[] };
   sqlServer: SqlServerConfig;
   sageX3: SageX3Config;
   rateLimit: RateLimitConfig;
@@ -224,6 +225,15 @@ export default (): AppConfig => {
     databaseUrl: process.env.DATABASE_URL,
     logLevel: process.env.LOG_LEVEL ?? 'info',
     swaggerEnabled: resolveSwaggerEnabled(nodeEnv),
+    cors: {
+      enabled: parseBool(process.env.CORS_ENABLED, true),
+      // Comma-separated allow-list; default '*' reflects any origin (bearer-token
+      // APIs, no cookies). Set CORS_ORIGINS to lock this down per environment.
+      origins: (process.env.CORS_ORIGINS ?? '*')
+        .split(',')
+        .map((o) => o.trim())
+        .filter((o) => o.length > 0),
+    },
 
     sqlServer: {
       enabled: parseBool(process.env.SQL_SERVER_ENABLED, false),

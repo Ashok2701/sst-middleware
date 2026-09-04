@@ -22,6 +22,26 @@ async function bootstrap(): Promise<void> {
   const swaggerEnabled = config.get<boolean>('swaggerEnabled') ?? false;
   const version = process.env.npm_package_version ?? '0.1.0';
 
+  // CORS - required so browser-based clients (and any cross-origin consumer app)
+  // can call the API. Origins are configurable via CORS_ORIGINS ('*' by default;
+  // these are stateless bearer-token APIs with no cookies).
+  const cors = config.get<{ enabled: boolean; origins: string[] }>('cors');
+  if (cors?.enabled) {
+    const allowAll = cors.origins.includes('*');
+    app.enableCors({
+      origin: allowAll ? true : cors.origins,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Worksuite-Timestamp',
+        'X-Worksuite-Signature',
+        'X-Worksuite-Event-Id',
+      ],
+      maxAge: 86400,
+    });
+  }
+
   // Interactive API docs - only mounted when enabled for this environment.
   if (swaggerEnabled) {
     setupSwagger(app, version);

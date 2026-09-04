@@ -142,6 +142,11 @@ integrations adapter strategy doc.
 - Idempotency (Event-Id), audit (safe metadata only), correlation IDs, safe error model all reused unchanged. No Sage writes/DDL. Contractor persistence stays the pluggable in-memory store (upsert/merge) — durable datastore still a future decision.
 - Tests: 216 unit + 89 e2e all pass (added: event resolver, authenticator, all 5 event handlers, partnerId/missing-partnerId, profile-merge preservation, status change, company-TBD, WorkSuite API failure, malformed/no-leak). build + lint + openapi pass. Phases 1-3.7 preserved.
 
+### CORS fix (2026-09) — browser/cross-origin clients could not call the API
+- Root cause: CORS was never enabled; a browser REST client's preflight OPTIONS got 404 (no Access-Control headers), so the browser blocked the real POST ("No response"). Server-to-server callers were unaffected.
+- Fix: `app.enableCors(...)` in `main.ts`, configurable via `CORS_ENABLED` (default true) + `CORS_ORIGINS` (comma-separated, default `*`). Allowed methods + `Authorization`/`Content-Type`/`X-Worksuite-*` headers. Verified: preflight → 204 with headers, POST login → 200. 216 unit + 89 e2e still green.
+- REQUIRES redeploy on the Windows server (rebuild + restart) to take effect.
+
 ## Not implemented (by design / stop conditions)
 No business workflows/endpoints; no invented Sage/SQL operations (contracts not provided);
 FSM, FSM Scheduler, WorkSuite, Lead Perfection integrations; OAuth/OIDC provider; RBAC roles;
