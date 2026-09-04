@@ -24,7 +24,13 @@ export class TechnicianIdentityMapper {
     const technicianId = toStr(row.XTECH_0);
     const username = toStr(row.XTECHNCN_0);
     if (!technicianId || !username) return undefined;
-    return { technicianId, username, role: this.resolveRole(row.XLEADTECH_0) };
+    return {
+      technicianId,
+      username,
+      name: toStr(row.XTECHNAM_0),
+      crewId: toStr(row.XCREWID_0),
+      role: this.resolveRole(row.XLEADTECH_0),
+    };
   }
 
   /** Confirmed rule: exactly 2 => Lead Technician; any other value => Technician. */

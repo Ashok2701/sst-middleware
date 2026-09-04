@@ -9,6 +9,7 @@ import {
   TechnicianAuthConfig,
 } from '../../config/configuration';
 import { SqlServerAdapter } from '../../integrations/sql-server/sql-server.adapter';
+import { CompaniesService } from '../companies/companies.service';
 import { TechnicianIdentityMapper } from './mappers/technician-identity.mapper';
 import {
   TechnicianLoginResult,
@@ -46,6 +47,7 @@ export class TechnicianAuthService {
     private readonly tracker: TransactionTrackerService,
     private readonly mapper: TechnicianIdentityMapper,
     private readonly tokenIssuer: LocalTokenIssuer,
+    private readonly companies: CompaniesService,
     @Inject(TECHNICIAN_PASSWORD_VERIFIER)
     private readonly verifier: PasswordVerifier,
   ) {}
@@ -99,11 +101,25 @@ export class TechnicianAuthService {
         `correlationId=${getCorrelationId()}`,
     );
 
+    // Enrich with the technician's crew/company (XCREWID_0 -> FSM.XCREW). Best
+    // effort: a lookup failure must never fail the login.
+    let crew;
+    if (identity.crewId) {
+      try {
+        crew = await this.companies.getSummary(identity.crewId);
+      } catch (error) {
+        this.logger.warn(
+          `technician crew lookup failed correlationId=${getCorrelationId()}`,
+        );
+      }
+    }
+
     return {
       accessToken: token,
       tokenType: 'Bearer',
       expiresIn,
       user: identity,
+      crew,
     };
   }
 
@@ -138,7 +154,7 @@ export class TechnicianAuthService {
     // The configured username column is aliased to a stable output name so the
     // mapper stays column-name agnostic. The username is always bound (@username).
     const text =
-      `SELECT XTECH_0, [${ta.usernameColumn}] AS XTECHNCN_0, XPASSWRD_0, XLEADTECH_0 ` +
+      `SELECT XTECH_0, [${ta.usernameColumn}] AS XTECHNCN_0, XTECHNAM_0, XCREWID_0, XPASSWRD_0, XLEADTECH_0 ` +
       `FROM [${ta.schema}].[${ta.table}] WHERE [${ta.usernameColumn}] = @username`;
     return this.sql.query<TechnicianLoginRow>(
       text,

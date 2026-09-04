@@ -27,17 +27,23 @@ export class ServiceRequestsController {
 
   @Get()
   @Permissions('serviceRequest.read')
-  @ApiOperation({ summary: 'List service requests (summary)' })
+  @ApiOperation({
+    summary: 'List service requests (summary), by date and site',
+  })
   @ApiOkResponse({ type: ServiceRequestListResponse })
   @ApiUnauthorizedResponse({ type: ApiErrorResponse })
   @ApiForbiddenResponse({ type: ApiErrorResponse })
   async list(
+    @Query('site') site?: string,
+    @Query('date') date?: string,
     @Query('limit') limit?: string,
   ): Promise<ServiceRequestListResponse> {
     const parsed = limit ? Number(limit) : undefined;
-    const serviceRequests = await this.service.list(
-      Number.isFinite(parsed as number) ? (parsed as number) : undefined,
-    );
+    const serviceRequests = await this.service.list({
+      site: site?.trim() || undefined,
+      date: date?.trim() || undefined,
+      limit: Number.isFinite(parsed as number) ? (parsed as number) : undefined,
+    });
     return { serviceRequests, count: serviceRequests.length };
   }
 

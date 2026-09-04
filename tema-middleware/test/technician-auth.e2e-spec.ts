@@ -85,7 +85,42 @@ describe('POST /api/auth/technician/login (e2e)', () => {
       userId: 'T1',
       username: 'jdoe',
       roles: ['Technician'],
-      permissions: ['technician.read'],
+      permissions: [
+        'technician.read',
+        'company.read',
+        'serviceRequest.read',
+        'route.read',
+      ],
+    });
+  });
+
+  it('includes the crew/company when the technician has XCREWID_0', async () => {
+    query
+      .mockResolvedValueOnce([
+        {
+          XTECH_0: 'T7',
+          XTECHNCN_0: 'crewtech',
+          XTECHNAM_0: 'Crew Tech',
+          XCREWID_0: 'CREW9',
+          XPASSWRD_0: 'pw',
+          XLEADTECH_0: 2,
+        },
+      ]) // technician login row
+      .mockResolvedValueOnce([
+        {
+          XCREWID_0: 'CREW9',
+          XCRENAM_0: 'North Team',
+          XFCY_0: 'USA01',
+          XACTIVE_0: 2,
+        },
+      ]); // crew summary
+    const res = await login('crewtech', 'pw').expect(200);
+    expect(res.body.user).toMatchObject({ name: 'Crew Tech', crewId: 'CREW9' });
+    expect(res.body.crew).toMatchObject({
+      crewId: 'CREW9',
+      name: 'North Team',
+      site: 'USA01',
+      active: true,
     });
   });
 

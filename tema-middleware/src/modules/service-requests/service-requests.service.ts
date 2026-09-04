@@ -13,8 +13,11 @@ import {
 const SAFE_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 const HEADER_COLS =
-  'SRENUM_0, SREDES_0, XSTATUS_0, XSRDATE_0, CREDAT_0, SREBPC_0, ' +
-  'XBPAADDLIG_0, XCTY_0, XPOSCOD_0, XCRY_0, XDRN_0';
+  'SRENUM_0, SREDES_0, XSTATUS_0, XSRDATE_0, SRERESDAT_0, CREDAT_0, SALFCY_0, ' +
+  'SREBPC_0, XBPAADDLIG_0, XCTY_0, XPOSCOD_0, XCRY_0, XDRN_0';
+
+/** Basic YYYY-MM-DD guard for the optional date filter (bound as a parameter). */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Read-only Service Request access (Phase 3.6). Composes the header + nested
@@ -49,12 +52,35 @@ export class ServiceRequestsService {
     return c;
   }
 
-  async list(limit?: number): Promise<ServiceRequestSummary[]> {
+  async list(
+    opts: { limit?: number; site?: string; date?: string } = {},
+  ): Promise<ServiceRequestSummary[]> {
     const c = this.cfg();
-    const n = Math.min(Math.max(1, limit ?? c.maxResults), c.maxResults);
+    const n = Math.min(Math.max(1, opts.limit ?? c.maxResults), c.maxResults);
+
+    // Optional filters (SALFCY_0 = site, SRERESDAT_0 = reservation date). Both
+    // values are BOUND parameters - never concatenated into the SQL text.
+    const params: Record<string, unknown> = {};
+    const clauses: string[] = [];
+    if (opts.site) {
+      params.site = opts.site;
+      clauses.push('SALFCY_0 = @site');
+    }
+    if (opts.date) {
+      if (!ISO_DATE.test(opts.date)) {
+        throw new NotFoundException({
+          code: 'INVALID_PARAMETER',
+          message: 'date must be YYYY-MM-DD',
+        });
+      }
+      params.date = opts.date;
+      clauses.push('CAST(SRERESDAT_0 AS DATE) = @date');
+    }
+    const where = clauses.length ? `WHERE ${clauses.join(' AND ')} ` : '';
+
     const text =
       `SELECT TOP (${n}) ${HEADER_COLS} FROM [${c.schema}].[${c.table}] ` +
-      `ORDER BY SRENUM_0 DESC`;
+      `${where}ORDER BY SRENUM_0 DESC`;
     const rows = await this.tracker.track(
       {
         sourceSystem: 'TEMA',
@@ -62,7 +88,7 @@ export class ServiceRequestsService {
         operation: 'listServiceRequests',
         entityType: 'ServiceRequest',
       },
-      () => this.sql.query<SqlRow>(text, {}, 'listServiceRequests'),
+      () => this.sql.query<SqlRow>(text, params, 'listServiceRequests'),
     );
     return rows.map((r) => this.mapper.toSummary(r));
   }

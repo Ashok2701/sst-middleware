@@ -19,6 +19,7 @@ function build(opts: {
   issuerAvailable?: boolean;
   ta?: Partial<TechnicianAuthConfig>;
   queryImpl?: jest.Mock;
+  crew?: unknown;
 }) {
   const query = opts.queryImpl ?? jest.fn().mockResolvedValue(opts.rows ?? []);
   const executeStoredProcedure = jest.fn().mockResolvedValue(opts.rows ?? []);
@@ -41,6 +42,9 @@ function build(opts: {
     isAvailable: () => opts.issuerAvailable ?? true,
     issue: okIssuer.issue,
   } as any;
+  const companies = {
+    getSummary: jest.fn().mockResolvedValue(opts.crew),
+  } as any;
 
   const service = new TechnicianAuthService(
     sql,
@@ -48,9 +52,10 @@ function build(opts: {
     tracker,
     new TechnicianIdentityMapper(),
     issuer,
+    companies,
     new PlaintextPasswordVerifier(),
   );
-  return { service, query, executeStoredProcedure, issuer };
+  return { service, query, executeStoredProcedure, issuer, companies };
 }
 
 describe('TechnicianAuthService', () => {
@@ -86,9 +91,62 @@ describe('TechnicianAuthService', () => {
       expect.objectContaining({
         subject: 'T2',
         roles: ['Lead Technician'],
-        permissions: ['technician.read'],
+        permissions: [
+          'technician.read',
+          'company.read',
+          'serviceRequest.read',
+          'route.read',
+        ],
       }),
     );
+  });
+
+  it('enriches the response with the crew/company (XCREWID_0 -> FSM.XCREW)', async () => {
+    const { service, companies } = build({
+      rows: [
+        {
+          XTECH_0: 'T3',
+          XTECHNCN_0: 'crewtech',
+          XTECHNAM_0: 'Crew Tech',
+          XCREWID_0: 'CREW9',
+          XPASSWRD_0: 'pw',
+          XLEADTECH_0: 1,
+        },
+      ],
+      crew: {
+        crewId: 'CREW9',
+        name: 'North Team',
+        site: 'USA01',
+        active: true,
+      },
+    });
+    const res = await service.login('crewtech', 'pw');
+    expect(companies.getSummary).toHaveBeenCalledWith('CREW9');
+    expect(res.user).toMatchObject({ name: 'Crew Tech', crewId: 'CREW9' });
+    expect(res.crew).toEqual({
+      crewId: 'CREW9',
+      name: 'North Team',
+      site: 'USA01',
+      active: true,
+    });
+  });
+
+  it('never fails login if the crew lookup errors', async () => {
+    const { service, companies } = build({
+      rows: [
+        {
+          XTECH_0: 'T4',
+          XTECHNCN_0: 'jdoe',
+          XCREWID_0: 'CREWX',
+          XPASSWRD_0: 'pw',
+          XLEADTECH_0: 1,
+        },
+      ],
+    });
+    companies.getSummary.mockRejectedValue(new Error('sql down'));
+    const res = await service.login('jdoe', 'pw');
+    expect(res.accessToken).toBe('signed.jwt.token');
+    expect(res.crew).toBeUndefined();
   });
 
   it('uses a parameterized query (username bound, never concatenated)', async () => {

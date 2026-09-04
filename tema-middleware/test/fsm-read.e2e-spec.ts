@@ -163,10 +163,82 @@ describe('FSM read APIs - Service Requests & Routes (e2e)', () => {
     await request(app.getHttpServer()).get('/api/routes').expect(401);
   });
 
-  it('forbids routes without route.read (403)', async () => {
+  it('filters service requests by date and site (bound params)', async () => {
+    query.mockResolvedValue([
+      { SRENUM_0: 'SRE002', SALFCY_0: 'USA01', SRERESDAT_0: '2026-06-01' },
+    ]);
+    const res = await request(app.getHttpServer())
+      .get('/api/service-requests?site=USA01&date=2026-06-01')
+      .set('Authorization', srToken)
+      .expect(200);
+    const [text, params] = query.mock.calls[0];
+    expect(text).toContain('SALFCY_0 = @site');
+    expect(text).toContain('CAST(SRERESDAT_0 AS DATE) = @date');
+    expect(params).toEqual({ site: 'USA01', date: '2026-06-01' });
+    expect(res.body.serviceRequests[0]).toMatchObject({
+      serviceRequestNumber: 'SRE002',
+      site: 'USA01',
+    });
+  });
+
+  it('rejects a malformed date filter (400)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/service-requests?date=01-06-2026')
+      .set('Authorization', srToken)
+      .expect(404);
+    expect(res.body.code).toBe('INVALID_PARAMETER');
+  });
+
+  it('lists companies/crews and returns a crew with its technicians (company.read)', async () => {
+    const companyToken = `Bearer ${sign(['company.read'])}`;
+    query.mockResolvedValueOnce([
+      { XCREWID_0: 'CREW1', XCRENAM_0: 'North', XFCY_0: 'USA01', XACTIVE_0: 2 },
+    ]);
+    const list = await request(app.getHttpServer())
+      .get('/api/companies?site=USA01')
+      .set('Authorization', companyToken)
+      .expect(200);
+    expect(list.body.companies[0]).toMatchObject({
+      crewId: 'CREW1',
+      name: 'North',
+      active: true,
+    });
+
+    query
+      .mockResolvedValueOnce([
+        {
+          XCREWID_0: 'CREW1',
+          XCRENAM_0: 'North',
+          XFCY_0: 'USA01',
+          XACTIVE_0: 2,
+        },
+      ])
+      .mockResolvedValueOnce([
+        { XTECH_0: 'T1', XTECHNAM_0: 'John', XLEADTECH_0: 2 },
+      ]);
+    const detail = await request(app.getHttpServer())
+      .get('/api/companies/CREW1')
+      .set('Authorization', companyToken)
+      .expect(200);
+    expect(detail.body.technicians).toHaveLength(1);
+    expect(detail.body.technicians[0]).toMatchObject({
+      technicianId: 'T1',
+      leadTechnician: true,
+    });
+  });
+
+  it('404s a missing company and forbids without company.read', async () => {
+    query.mockResolvedValueOnce([]);
+    const notFound = await request(app.getHttpServer())
+      .get('/api/companies/NOPE')
+      .set('Authorization', `Bearer ${sign(['company.read'])}`)
+      .expect(404);
+    expect(notFound.body.code).toBe('NOT_FOUND');
+
     await request(app.getHttpServer())
-      .get('/api/routes')
+      .get('/api/companies')
       .set('Authorization', srToken)
       .expect(403);
+    await request(app.getHttpServer()).get('/api/companies').expect(401);
   });
 });

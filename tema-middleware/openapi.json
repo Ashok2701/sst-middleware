@@ -292,6 +292,126 @@
         ]
       }
     },
+    "/api/companies": {
+      "get": {
+        "operationId": "CompaniesController_list",
+        "summary": "List companies/crews (optionally by site)",
+        "parameters": [
+          {
+            "name": "site",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Companies"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/companies/{id}": {
+      "get": {
+        "operationId": "CompaniesController_getById",
+        "summary": "Get a company/crew with its technicians",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Companies"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/auth/sales-rep/login": {
       "post": {
         "operationId": "SalesRepAuthController_login",
@@ -347,8 +467,24 @@
     "/api/service-requests": {
       "get": {
         "operationId": "ServiceRequestsController_list",
-        "summary": "List service requests (summary)",
+        "summary": "List service requests (summary), by date and site",
         "parameters": [
+          {
+            "name": "site",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "limit",
             "required": true,
@@ -938,6 +1074,14 @@
             "example": "jdoe",
             "description": "Login username (XTECHNCN_0)"
           },
+          "name": {
+            "type": "string",
+            "description": "Technician name (XTECHNAM_0)"
+          },
+          "crewId": {
+            "type": "string",
+            "description": "Crew/company id (XCREWID_0)"
+          },
           "role": {
             "type": "string",
             "example": "Technician",
@@ -951,6 +1095,27 @@
           "technicianId",
           "username",
           "role"
+        ]
+      },
+      "TechnicianCrewDto": {
+        "type": "object",
+        "properties": {
+          "crewId": {
+            "type": "string",
+            "example": "CREW001"
+          },
+          "name": {
+            "type": "string"
+          },
+          "site": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "crewId"
         ]
       },
       "TechnicianLoginResponse": {
@@ -971,6 +1136,14 @@
           },
           "user": {
             "$ref": "#/components/schemas/TechnicianIdentityDto"
+          },
+          "crew": {
+            "description": "Technician's crew/company (FSM.XCREW via XCREWID_0)",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TechnicianCrewDto"
+              }
+            ]
           }
         },
         "required": [
@@ -978,6 +1151,109 @@
           "tokenType",
           "expiresIn",
           "user"
+        ]
+      },
+      "CompanyDto": {
+        "type": "object",
+        "properties": {
+          "crewId": {
+            "type": "string",
+            "example": "CREW001"
+          },
+          "name": {
+            "type": "string",
+            "example": "North Team"
+          },
+          "site": {
+            "type": "string",
+            "example": "USA01"
+          },
+          "active": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "crewId"
+        ]
+      },
+      "CompanyListResponse": {
+        "type": "object",
+        "properties": {
+          "companies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompanyDto"
+            }
+          },
+          "count": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "companies",
+          "count"
+        ]
+      },
+      "CompanyTechnicianDto": {
+        "type": "object",
+        "properties": {
+          "technicianId": {
+            "type": "string",
+            "example": "7051"
+          },
+          "name": {
+            "type": "string"
+          },
+          "leadTechnician": {
+            "type": "boolean",
+            "example": false
+          },
+          "skillType": {
+            "type": "string"
+          },
+          "certification": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "technicianId",
+          "leadTechnician"
+        ]
+      },
+      "CompanyDetailResponse": {
+        "type": "object",
+        "properties": {
+          "crewId": {
+            "type": "string",
+            "example": "CREW001"
+          },
+          "name": {
+            "type": "string",
+            "example": "North Team"
+          },
+          "site": {
+            "type": "string",
+            "example": "USA01"
+          },
+          "active": {
+            "type": "boolean",
+            "example": true
+          },
+          "technicians": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompanyTechnicianDto"
+            }
+          }
+        },
+        "required": [
+          "crewId",
+          "technicians"
         ]
       },
       "SalesRepLoginRequest": {
@@ -1083,7 +1359,13 @@
           "serviceDate": {
             "type": "string"
           },
+          "reservationDate": {
+            "type": "string"
+          },
           "createdDate": {
+            "type": "string"
+          },
+          "site": {
             "type": "string"
           },
           "customer": {
@@ -1135,7 +1417,13 @@
           "serviceDate": {
             "type": "string"
           },
+          "reservationDate": {
+            "type": "string"
+          },
           "createdDate": {
+            "type": "string"
+          },
+          "site": {
             "type": "string"
           },
           "customer": {

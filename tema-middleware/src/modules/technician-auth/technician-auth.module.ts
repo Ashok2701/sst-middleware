@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IntegrationsModule } from '../../integrations/integrations.module';
+import { CompaniesModule } from '../companies/companies.module';
 import { TechnicianIdentityMapper } from './mappers/technician-identity.mapper';
 import {
   PlaintextPasswordVerifier,
@@ -17,7 +18,7 @@ import { TechnicianAuthService } from './technician-auth.service';
  * shared LocalTokenIssuer provided globally by AuthModule.
  */
 @Module({
-  imports: [IntegrationsModule],
+  imports: [IntegrationsModule, CompaniesModule],
   controllers: [TechnicianAuthController],
   providers: [
     TechnicianAuthService,

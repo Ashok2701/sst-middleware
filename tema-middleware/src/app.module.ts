@@ -25,6 +25,7 @@ import { TechnicianAuthModule } from './modules/technician-auth/technician-auth.
 import { SalesRepAuthModule } from './modules/sales-rep-auth/sales-rep-auth.module';
 import { ServiceRequestsModule } from './modules/service-requests/service-requests.module';
 import { RoutesModule } from './modules/routes/routes.module';
+import { CompaniesModule } from './modules/companies/companies.module';
 import { WorksuiteWebhookModule } from './modules/worksuite-webhook/worksuite-webhook.module';
 import { VersionModule } from './version/version.module';
 
@@ -63,6 +64,8 @@ import { VersionModule } from './version/version.module';
     SalesRepAuthModule,
     ServiceRequestsModule,
     RoutesModule,
+    // Companies (== Crews) read API + technician-login crew enrichment.
+    CompaniesModule,
   ],
   providers: [
     // Global, consistent error handling for every route.

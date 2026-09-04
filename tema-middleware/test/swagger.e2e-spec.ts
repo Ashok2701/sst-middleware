@@ -37,6 +37,8 @@ describe('Swagger (e2e)', () => {
       expect(paths.sort()).toEqual([
         '/api/auth/sales-rep/login',
         '/api/auth/technician/login',
+        '/api/companies',
+        '/api/companies/{id}',
         '/api/routes',
         '/api/routes/{xdrn}',
         '/api/service-requests',

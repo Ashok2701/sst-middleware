@@ -12,7 +12,9 @@ export interface ServiceRequestSummary {
   description?: string;
   status?: number;
   serviceDate?: string;
+  reservationDate?: string;
   createdDate?: string;
+  site?: string;
   customer?: string;
   address?: string;
   routeNumber?: string;

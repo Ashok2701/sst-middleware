@@ -28,11 +28,28 @@ export class TechnicianIdentityDto {
   @ApiProperty({ example: 'jdoe', description: 'Login username (XTECHNCN_0)' })
   username: string;
 
+  @ApiProperty({ required: false, description: 'Technician name (XTECHNAM_0)' })
+  name?: string;
+
+  @ApiProperty({ required: false, description: 'Crew/company id (XCREWID_0)' })
+  crewId?: string;
+
   @ApiProperty({
     example: 'Technician',
     enum: ['Lead Technician', 'Technician'],
   })
   role: string;
+}
+
+export class TechnicianCrewDto {
+  @ApiProperty({ example: 'CREW001' })
+  crewId: string;
+  @ApiProperty({ required: false })
+  name?: string;
+  @ApiProperty({ required: false })
+  site?: string;
+  @ApiProperty({ required: false })
+  active?: boolean;
 }
 
 export class TechnicianLoginResponse {
@@ -47,4 +64,11 @@ export class TechnicianLoginResponse {
 
   @ApiProperty({ type: TechnicianIdentityDto })
   user: TechnicianIdentityDto;
+
+  @ApiProperty({
+    type: TechnicianCrewDto,
+    required: false,
+    description: "Technician's crew/company (FSM.XCREW via XCREWID_0)",
+  })
+  crew?: TechnicianCrewDto;
 }

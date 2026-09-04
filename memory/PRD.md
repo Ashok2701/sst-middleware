@@ -147,6 +147,16 @@ integrations adapter strategy doc.
 - Fix: `app.enableCors(...)` in `main.ts`, configurable via `CORS_ENABLED` (default true) + `CORS_ORIGINS` (comma-separated, default `*`). Allowed methods + `Authorization`/`Content-Type`/`X-Worksuite-*` headers. Verified: preflight → 204 with headers, POST login → 200. 216 unit + 89 e2e still green.
 - REQUIRES redeploy on the Windows server (rebuild + restart) to take effect.
 
+### Phase 3.9 (2026-09) — SR date+site filter, Companies/Crew API, technician-login crew enrichment
+- Service Requests: `GET /api/service-requests` now supports `?site=` (SALFCY_0) + `?date=YYYY-MM-DD` (CAST(SRERESDAT_0 AS DATE)), both bound parameters; added `site` + `reservationDate` to the summary. Still read-only, no DDL.
+- Companies (== Crews) READ API: new module. `GET /api/companies?site=&limit=` and `GET /api/companies/:id` (crew + its technicians). Source FSM.XCREW joined to FSM.XTECHNCN via XCREWID_0. Crew password (XPASSWRD_0) never selected/exposed. Permission `company.read`.
+- Technician login enrichment: response `user` now includes `name` (XTECHNAM_0) + `crewId` (XCREWID_0); added top-level `crew` (FSM.XCREW summary via XCREWID_0, best-effort — never fails login).
+- Permissions: technician token now carries technician.read, company.read, serviceRequest.read, route.read (FSM Mobile persona). Adjust in technician-identity.model TECHNICIAN_PERMISSIONS.
+- Tests: 223 unit + 93 e2e pass; build/lint/openapi pass. Live read-only validation OK (scripts/check-phase39-queries.js).
+- LIVE DATA FINDINGS (need business decision):
+  1. A technician has MULTIPLE XTECHNCN rows = multiple crews (e.g. 7051 -> AHMG1, AHMG, AHMG). Login currently takes rows[0] (no ORDER BY) so the crew is non-deterministic. Open question: return ALL crews (crews[]) vs a single "primary" crew, and which XTECHNCN row drives role/password.
+  2. FSM.XCREW is nearly empty in this env (only 'AHMG'); 'AHMG1' not present -> crew lookup returns null. XCREW likely not fully populated yet.
+
 ## Not implemented (by design / stop conditions)
 No business workflows/endpoints; no invented Sage/SQL operations (contracts not provided);
 FSM, FSM Scheduler, WorkSuite, Lead Perfection integrations; OAuth/OIDC provider; RBAC roles;

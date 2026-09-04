@@ -146,6 +146,15 @@ export interface RoutesConfig {
   maxResults: number;
 }
 
+/** Companies (== Crews, FSM.XCREW) read source. Read-only; no CRUD/DDL. */
+export interface CompaniesConfig {
+  schema: string;
+  crewTable: string;
+  technicianTable: string;
+  permission: string;
+  maxResults: number;
+}
+
 export interface WorksuiteConfig {
   enabled: boolean;
   baseUrl?: string;
@@ -201,6 +210,7 @@ export interface AppConfig {
   leadPerfection: LeadPerfectionConfig;
   serviceRequests: ServiceRequestsConfig;
   routes: RoutesConfig;
+  companies: CompaniesConfig;
 }
 
 function resolveSwaggerEnabled(nodeEnv: string): boolean {
@@ -400,6 +410,16 @@ export default (): AppConfig => {
       newStatus: parseIntEnv(process.env.ROUTE_NEW_STATUS, 1),
       sourceStatus: parseIntEnv(process.env.ROUTE_SOURCE_STATUS, 1524),
       maxResults: parseIntEnv(process.env.SQL_ROUTE_MAX_RESULTS, 100),
+    },
+
+    // Companies (== Crews) read source (FSM.XCREW joined to FSM.XTECHNCN via
+    // XCREWID_0). Read-only; the crew XPASSWRD_0 is NEVER selected/exposed.
+    companies: {
+      schema: process.env.SQL_FSM_SCHEMA ?? 'dbo',
+      crewTable: process.env.SQL_CREW_TABLE ?? 'XCREW',
+      technicianTable: process.env.SQL_TECHNICIAN_TABLE ?? 'XTECHNCN',
+      permission: process.env.COMPANY_READ_PERMISSION ?? 'company.read',
+      maxResults: parseIntEnv(process.env.SQL_COMPANY_MAX_RESULTS, 100),
     },
   };
 };

@@ -10,7 +10,11 @@ export class ServiceRequestSummaryDto {
   @ApiProperty({ required: false })
   serviceDate?: string;
   @ApiProperty({ required: false })
+  reservationDate?: string;
+  @ApiProperty({ required: false })
   createdDate?: string;
+  @ApiProperty({ required: false })
+  site?: string;
   @ApiProperty({ required: false })
   customer?: string;
   @ApiProperty({ required: false })
